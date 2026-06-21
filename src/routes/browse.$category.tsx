@@ -1,0 +1,71 @@
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { CategoryIcon } from "@/components/site/CategoryIcon";
+import { ProviderCard } from "@/routes/index";
+import { Card } from "@/components/ui/card";
+
+export const Route = createFileRoute("/browse/$category")({
+  head: ({ params }) => ({ meta: [{ title: `${params.category} pros — SkillConnect` }] }),
+  component: BrowseCategory,
+  notFoundComponent: () => <div className="container mx-auto py-20 text-center text-muted-foreground">Category not found</div>,
+  errorComponent: ({ error }) => <div className="container mx-auto py-20 text-center text-destructive">{error.message}</div>,
+});
+
+function BrowseCategory() {
+  const { category } = Route.useParams();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
+
+  const { data: cat } = useQuery({
+    queryKey: ["category", category],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("*").eq("slug", category).maybeSingle();
+      if (error) throw error;
+      if (!data) throw notFound();
+      return data;
+    },
+  });
+
+  const { data: providers = [] } = useQuery({
+    queryKey: ["providers-by-cat", category],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("providers")
+        .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles:id(full_name, avatar_url)")
+        .eq("category_slug", category)
+        .order("avg_rating", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  return (
+    <div className="container mx-auto px-4 py-10">
+      <Link to="/browse" className="text-sm text-muted-foreground hover:text-foreground">← {t("browse.all")}</Link>
+      <div className="mt-4 flex items-center gap-4">
+        {cat && (
+          <span className="grid h-14 w-14 place-items-center rounded-2xl" style={{ backgroundColor: `${cat.color}1a`, color: cat.color }}>
+            <CategoryIcon name={cat.icon} className="h-7 w-7" />
+          </span>
+        )}
+        <div>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+            {cat ? (lang === "ta" ? cat.name_ta : cat.name_en) : category}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{providers.length} professionals</p>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        {providers.length === 0 ? (
+          <Card className="p-10 text-center border-dashed text-muted-foreground">{t("browse.empty")}</Card>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {providers.map((p) => <ProviderCard key={p.id} p={p} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
