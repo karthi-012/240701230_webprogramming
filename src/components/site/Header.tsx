@@ -1,15 +1,30 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
+import { useMode } from "@/hooks/use-mode";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "./LanguageToggle";
-import { Sparkles, Menu } from "lucide-react";
+import { Sparkles, Menu, UserCircle, Briefcase, ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 
 export function Header() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
+  const { mode, setMode, clearMode } = useMode();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  const switchMode = () => {
+    const next = mode === "provider" ? "customer" : "provider";
+    setMode(next);
+    void navigate({ to: next === "provider" ? "/dashboard/provider" : "/dashboard" });
+  };
+
+  const handleSignOut = async () => {
+    clearMode();
+    await signOut();
+    void navigate({ to: "/" });
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -34,13 +49,26 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {user && mode && (
+            <button
+              onClick={switchMode}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold hover:bg-accent/10 transition-colors"
+              title="Switch mode"
+            >
+              {mode === "provider" ? <Briefcase className="h-3.5 w-3.5" /> : <UserCircle className="h-3.5 w-3.5" />}
+              <span className="capitalize">{mode}</span>
+              <ArrowLeftRight className="h-3 w-3 opacity-60" />
+            </button>
+          )}
           <LanguageToggle />
           {user ? (
             <>
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-                <Link to="/dashboard">{t("nav.dashboard")}</Link>
+                <Link to={mode === "provider" ? "/dashboard/provider" : "/dashboard"}>
+                  {t("nav.dashboard")}
+                </Link>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => void signOut()}>
+              <Button variant="outline" size="sm" onClick={() => void handleSignOut()}>
                 {t("nav.signOut")}
               </Button>
             </>
@@ -60,7 +88,29 @@ export function Header() {
             <Link to="/browse" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.browse")}</Link>
             <a href="/#how" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.howItWorks")}</a>
             <Link to="/onboarding" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.forPros")}</Link>
-            {user && <Link to="/dashboard" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.dashboard")}</Link>}
+            {user && (
+              <>
+                <Link
+                  to={mode === "provider" ? "/dashboard/provider" : "/dashboard"}
+                  onClick={() => setOpen(false)}
+                  className="py-2 text-sm font-medium"
+                >
+                  {t("nav.dashboard")}
+                </Link>
+                {mode && (
+                  <button
+                    onClick={() => { switchMode(); setOpen(false); }}
+                    className="flex items-center gap-2 py-2 text-sm font-medium text-left"
+                  >
+                    <ArrowLeftRight className="h-4 w-4" />
+                    Switch to {mode === "provider" ? "Customer" : "Provider"}
+                  </button>
+                )}
+                <Link to="/mode" onClick={() => setOpen(false)} className="py-2 text-sm font-medium text-muted-foreground">
+                  Choose mode…
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

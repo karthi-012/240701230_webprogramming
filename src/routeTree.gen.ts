@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ModeRouteImport } from './routes/mode'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
@@ -21,6 +22,11 @@ import { Route as BrowseCategoryRouteImport } from './routes/browse.$category'
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModeRoute = ModeRouteImport.update({
+  id: '/mode',
+  path: '/mode',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -62,6 +68,7 @@ const BrowseCategoryRoute = BrowseCategoryRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mode': typeof ModeRoute
   '/onboarding': typeof OnboardingRoute
   '/browse/$category': typeof BrowseCategoryRoute
   '/dashboard/provider': typeof DashboardProviderRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mode': typeof ModeRoute
   '/onboarding': typeof OnboardingRoute
   '/browse/$category': typeof BrowseCategoryRoute
   '/dashboard/provider': typeof DashboardProviderRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mode': typeof ModeRoute
   '/onboarding': typeof OnboardingRoute
   '/browse/$category': typeof BrowseCategoryRoute
   '/dashboard/provider': typeof DashboardProviderRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/mode'
     | '/onboarding'
     | '/browse/$category'
     | '/dashboard/provider'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/mode'
     | '/onboarding'
     | '/browse/$category'
     | '/dashboard/provider'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/mode'
     | '/onboarding'
     | '/browse/$category'
     | '/dashboard/provider'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  ModeRoute: typeof ModeRoute
   OnboardingRoute: typeof OnboardingRoute
   BrowseCategoryRoute: typeof BrowseCategoryRoute
   DashboardProviderRoute: typeof DashboardProviderRoute
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mode': {
+      id: '/mode'
+      path: '/mode'
+      fullPath: '/mode'
+      preLoaderRoute: typeof ModeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  ModeRoute: ModeRoute,
   OnboardingRoute: OnboardingRoute,
   BrowseCategoryRoute: BrowseCategoryRoute,
   DashboardProviderRoute: DashboardProviderRoute,
