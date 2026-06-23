@@ -28,7 +28,7 @@ if (!i18n.isInitialized) {
     supportedLngs: ["en", "ta"],
     interpolation: { escapeValue: false },
     react: { useSuspense: false },
-    initImmediate: false,
+    
   });
 
   if (isBrowser) {
