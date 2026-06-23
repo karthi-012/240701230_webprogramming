@@ -115,18 +115,20 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ModeProvider>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">
-              <Outlet />
-            </main>
-            <Footer />
-          </div>
-          <Toaster richColors position="top-center" />
-        </ModeProvider>
-      </AuthProvider>
+      <I18nextProvider i18n={i18n} defaultNS="translation">
+        <AuthProvider>
+          <ModeProvider>
+            <div className="flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">
+                <Outlet />
+              </main>
+              <Footer />
+            </div>
+            <Toaster richColors position="top-center" />
+          </ModeProvider>
+        </AuthProvider>
+      </I18nextProvider>
     </QueryClientProvider>
   );
 }
