@@ -22,7 +22,7 @@ function ProviderPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("providers")
-        .select("*, profiles:id(full_name, avatar_url, phone, city)")
+        .select("*, profiles!providers_profile_fkey(full_name, avatar_url, phone, city)")
         .eq("id", id).maybeSingle();
       if (error) throw error;
       return data;
