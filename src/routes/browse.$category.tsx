@@ -33,7 +33,7 @@ function BrowseCategory() {
     queryFn: async () => {
       const { data } = await supabase
         .from("providers")
-        .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles:id(full_name, avatar_url)")
+        .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .eq("category_slug", category)
         .order("avg_rating", { ascending: false });
       return data ?? [];

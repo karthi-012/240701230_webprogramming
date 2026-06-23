@@ -38,7 +38,7 @@ function Dashboard() {
   const { data: bookings = [] } = useQuery({
     enabled: !!user,
     queryKey: ["my-bookings", user?.id],
-    queryFn: async () => (await supabase.from("bookings").select("*, providers:provider_id(headline, category_slug, profiles:id(full_name))").eq("customer_id", user!.id).order("created_at", { ascending: false }).limit(10)).data ?? [],
+    queryFn: async () => (await supabase.from("bookings").select("*, providers:provider_id(headline, category_slug, profiles!providers_profile_fkey(full_name))").eq("customer_id", user!.id).order("created_at", { ascending: false }).limit(10)).data ?? [],
   });
 
   const { data: favorites = [] } = useQuery({
@@ -46,7 +46,7 @@ function Dashboard() {
     queryKey: ["my-favorites", user?.id],
     queryFn: async () => (await supabase
       .from("favorites")
-      .select("provider_id, providers:provider_id(id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles:id(full_name, avatar_url))")
+      .select("provider_id, providers:provider_id(id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url))")
       .eq("customer_id", user!.id)).data ?? [],
   });
 
