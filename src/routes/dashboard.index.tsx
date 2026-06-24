@@ -1,13 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { ProviderCard } from "@/routes/index";
-import { Briefcase, Heart, Calendar, Settings } from "lucide-react";
+import { Briefcase, Heart, Calendar, Star } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [{ title: "Dashboard — SkillConnect" }] }),
@@ -18,6 +23,7 @@ function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [reviewBooking, setReviewBooking] = useState<{ id: string; provider_id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) void navigate({ to: "/auth" });
@@ -40,6 +46,13 @@ function Dashboard() {
     queryKey: ["my-bookings", user?.id],
     queryFn: async () => (await supabase.from("bookings").select("*, providers:provider_id(headline, category_slug, profiles!providers_profile_fkey(full_name))").eq("customer_id", user!.id).order("created_at", { ascending: false }).limit(10)).data ?? [],
   });
+
+  const { data: myReviews = [] } = useQuery({
+    enabled: !!user,
+    queryKey: ["my-reviews", user?.id],
+    queryFn: async () => (await supabase.from("reviews").select("booking_id").eq("customer_id", user!.id)).data ?? [],
+  });
+  const reviewedBookingIds = new Set(myReviews.map((r) => r.booking_id).filter(Boolean));
 
   const { data: favorites = [] } = useQuery({
     enabled: !!user,
@@ -82,15 +95,30 @@ function Dashboard() {
         <div className="mt-4 grid gap-3">
           {bookings.length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground border-dashed">No bookings yet.</Card>
-          ) : bookings.map((b) => (
-            <Card key={b.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="font-semibold">{b.providers?.profiles?.full_name ?? "Provider"}</div>
-                <div className="text-xs text-muted-foreground capitalize">{b.providers?.category_slug?.replace("-", " ")} • {b.service_date}</div>
-              </div>
-              <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold capitalize">{b.status}</span>
-            </Card>
-          ))}
+          ) : bookings.map((b) => {
+            const name = b.providers?.profiles?.full_name ?? "Provider";
+            const isCompleted = b.status === "completed";
+            const alreadyReviewed = reviewedBookingIds.has(b.id);
+            return (
+              <Card key={b.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold">{name}</div>
+                  <div className="text-xs text-muted-foreground capitalize">{b.providers?.category_slug?.replace("-", " ")} • {b.service_date}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold capitalize">{b.status}</span>
+                  {isCompleted && !alreadyReviewed && (
+                    <Button size="sm" onClick={() => setReviewBooking({ id: b.id, provider_id: b.provider_id, name })}>
+                      <Star className="mr-1 h-3.5 w-3.5" /> Write review
+                    </Button>
+                  )}
+                  {isCompleted && alreadyReviewed && (
+                    <span className="text-xs text-success font-semibold">✓ Reviewed</span>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
@@ -104,6 +132,89 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      <ReviewDialog
+        booking={reviewBooking}
+        onClose={() => setReviewBooking(null)}
+      />
     </div>
+  );
+}
+
+function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id: string; name: string } | null; onClose: () => void }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [rating, setRating] = useState(5);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState("");
+
+  useEffect(() => {
+    if (booking) { setRating(5); setHover(0); setComment(""); }
+  }, [booking]);
+
+  const submit = useMutation({
+    mutationFn: async () => {
+      if (!user || !booking) throw new Error("Missing data");
+      const { error } = await supabase.from("reviews").insert({
+        booking_id: booking.id,
+        customer_id: user.id,
+        provider_id: booking.provider_id,
+        rating,
+        comment: comment.trim() || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Thanks for your review!");
+      qc.invalidateQueries({ queryKey: ["my-reviews"] });
+      qc.invalidateQueries({ queryKey: ["reviews"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={!!booking} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Rate {booking?.name}</DialogTitle>
+          <DialogDescription>Your feedback helps other customers choose wisely.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="flex items-center justify-center gap-1" onMouseLeave={() => setHover(0)}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                onMouseEnter={() => setHover(n)}
+                className="p-1"
+                aria-label={`${n} star${n > 1 ? "s" : ""}`}
+              >
+                <Star
+                  className={`h-8 w-8 transition-colors ${(hover || rating) >= n ? "fill-accent text-accent" : "text-muted-foreground"}`}
+                />
+              </button>
+            ))}
+          </div>
+          <Textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Tell others about the quality of work, punctuality, professionalism…"
+            rows={4}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={submit.isPending}
+            onClick={() => submit.mutate()}
+            className="bg-gradient-hero text-primary-foreground"
+          >
+            {submit.isPending ? "Submitting…" : "Submit review"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
