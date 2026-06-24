@@ -18,6 +18,7 @@ function BrowseCategory() {
   const { category } = Route.useParams();
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
+  const { user } = useAuth();
 
   const { data: cat } = useQuery({
     queryKey: ["category", category],
