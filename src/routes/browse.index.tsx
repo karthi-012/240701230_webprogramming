@@ -24,6 +24,7 @@ function BrowseAll() {
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
   const { q: initQ } = Route.useSearch();
   const [q, setQ] = useState(initQ ?? "");
+  const { user } = useAuth();
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -31,7 +32,7 @@ function BrowseAll() {
   });
 
   const { data: providers = [] } = useQuery({
-    queryKey: ["providers", q],
+    queryKey: ["providers", q, user?.id ?? null],
     queryFn: async () => {
       let query = supabase
         .from("providers")
@@ -41,6 +42,7 @@ function BrowseAll() {
       if (q.trim()) {
         query = query.or(`headline.ilike.%${q}%,city.ilike.%${q}%,category_slug.ilike.%${q}%`);
       }
+      if (user?.id) query = query.neq("id", user.id);
       const { data } = await query;
       return data ?? [];
     },
