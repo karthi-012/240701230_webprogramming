@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Card } from "@/components/ui/card";
@@ -17,6 +18,7 @@ function BrowseCategory() {
   const { category } = Route.useParams();
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
+  const { user } = useAuth();
 
   const { data: cat } = useQuery({
     queryKey: ["category", category],
@@ -29,13 +31,15 @@ function BrowseCategory() {
   });
 
   const { data: providers = [] } = useQuery({
-    queryKey: ["providers-by-cat", category],
+    queryKey: ["providers-by-cat", category, user?.id ?? null],
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("providers")
         .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .eq("category_slug", category)
         .order("avg_rating", { ascending: false });
+      if (user?.id) query = query.neq("id", user.id);
+      const { data } = await query;
       return data ?? [];
     },
   });
