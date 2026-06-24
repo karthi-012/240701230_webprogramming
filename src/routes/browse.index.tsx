@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Input } from "@/components/ui/input";
