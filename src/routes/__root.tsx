@@ -16,6 +16,7 @@ import i18n from "@/lib/i18n";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ModeProvider } from "@/hooks/use-mode";
 import { Header } from "@/components/site/Header";
+import { BackButton } from "@/components/site/BackButton";
 import { Footer } from "@/components/site/Footer";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -120,6 +121,7 @@ function RootComponent() {
           <ModeProvider>
             <div className="flex min-h-screen flex-col">
               <Header />
+              <BackButton />
               <main className="flex-1">
                 <Outlet />
               </main>
