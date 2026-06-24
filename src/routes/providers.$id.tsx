@@ -1,9 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { Star, Phone, MessageCircle, ShieldCheck, MapPin, Calendar, Briefcase } from "lucide-react";
 
 export const Route = createFileRoute("/providers/$id")({
@@ -13,9 +22,20 @@ export const Route = createFileRoute("/providers/$id")({
   notFoundComponent: () => <div className="container mx-auto py-20 text-center text-muted-foreground">Professional not found</div>,
 });
 
+// Build a WhatsApp deep-link safely. Strips non-digits and prefixes a default
+// country code (India, 91) when the user stored a 10-digit local number.
+function buildWhatsAppUrl(raw: string) {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) digits = "91" + digits;
+  return `https://wa.me/${digits}`;
+}
+
 function ProviderPage() {
   const { id } = Route.useParams();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [bookOpen, setBookOpen] = useState(false);
 
   const { data: provider } = useQuery({
     queryKey: ["provider", id],
@@ -41,12 +61,47 @@ function ProviderPage() {
       (await supabase.from("reviews").select("*, profiles:customer_id(full_name, avatar_url)").eq("provider_id", id).order("created_at", { ascending: false })).data ?? [],
   });
 
+  const createBooking = useMutation({
+    mutationFn: async (vals: { date: string; time: string; address: string; notes: string }) => {
+      if (!user) throw new Error("Please sign in to book a service.");
+      if (user.id === id) throw new Error("You cannot book yourself.");
+      const { error } = await supabase.from("bookings").insert({
+        customer_id: user.id,
+        provider_id: id,
+        service_date: vals.date,
+        service_time: vals.time || null,
+        address: vals.address || null,
+        notes: vals.notes || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Booking request sent!");
+      setBookOpen(false);
+      qc.invalidateQueries({ queryKey: ["my-bookings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (!provider) {
     return <div className="container mx-auto py-20 text-center text-muted-foreground">Loading…</div>;
   }
 
   const phone = provider.phone ?? provider.profiles?.phone;
   const wa = provider.whatsapp ?? phone;
+  const isSelf = user?.id === provider.id;
+
+  const onBookClick = () => {
+    if (!user) {
+      toast.error("Please sign in to book a service.");
+      return;
+    }
+    if (isSelf) {
+      toast.error("You cannot book yourself.");
+      return;
+    }
+    setBookOpen(true);
+  };
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -81,7 +136,12 @@ function ProviderPage() {
             </div>
           </div>
           <div className="flex flex-col gap-2 w-full md:w-auto">
-            <Button className="bg-gradient-hero text-primary-foreground font-semibold h-11">
+            <Button
+              className="bg-gradient-hero text-primary-foreground font-semibold h-11"
+              onClick={onBookClick}
+              disabled={isSelf}
+              title={isSelf ? "You cannot book yourself" : undefined}
+            >
               <Calendar className="mr-2 h-4 w-4" /> {t("provider.bookService")}
             </Button>
             <div className="grid grid-cols-2 gap-2">
@@ -91,10 +151,12 @@ function ProviderPage() {
                 </Button>
               )}
               {wa && (
-                <Button asChild variant="outline" className="font-semibold">
-                  <a href={`https://wa.me/${encodeURIComponent(wa.replace(/\D/g, ""))}`} target="_blank" rel="noreferrer">
-                    <MessageCircle className="mr-1.5 h-4 w-4" /> {t("provider.whatsapp")}
-                  </a>
+                <Button
+                  variant="outline"
+                  className="font-semibold"
+                  onClick={() => window.open(buildWhatsAppUrl(wa), "_blank", "noopener,noreferrer")}
+                >
+                  <MessageCircle className="mr-1.5 h-4 w-4" /> {t("provider.whatsapp")}
                 </Button>
               )}
             </div>
@@ -162,6 +224,74 @@ function ProviderPage() {
       <div className="mt-12 text-center">
         <Link to="/browse" className="text-sm text-muted-foreground hover:text-foreground">← Back to browse</Link>
       </div>
+
+      <BookingDialog
+        open={bookOpen}
+        onOpenChange={setBookOpen}
+        submitting={createBooking.isPending}
+        onSubmit={(vals) => createBooking.mutate(vals)}
+        providerName={provider.profiles?.full_name ?? "Professional"}
+      />
     </div>
+  );
+}
+
+function BookingDialog({
+  open, onOpenChange, onSubmit, submitting, providerName,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSubmit: (vals: { date: string; time: string; address: string; notes: string }) => void;
+  submitting: boolean;
+  providerName: string;
+}) {
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Book {providerName}</DialogTitle>
+          <DialogDescription>Send a booking request. The professional will confirm shortly.</DialogDescription>
+        </DialogHeader>
+        <form
+          className="grid gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!date) return;
+            onSubmit({ date, time, address, notes });
+          }}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="bk-date">Date</Label>
+              <Input id="bk-date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="bk-time">Time</Label>
+              <Input id="bk-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="bk-addr">Service address</Label>
+            <Input id="bk-addr" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, area, city" />
+          </div>
+          <div>
+            <Label htmlFor="bk-notes">Notes</Label>
+            <Textarea id="bk-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe the issue or scope" rows={3} />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={submitting || !date} className="bg-gradient-hero text-primary-foreground">
+              {submitting ? "Sending…" : "Send request"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
