@@ -31,13 +31,15 @@ function BrowseCategory() {
   });
 
   const { data: providers = [] } = useQuery({
-    queryKey: ["providers-by-cat", category],
+    queryKey: ["providers-by-cat", category, user?.id ?? null],
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("providers")
         .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .eq("category_slug", category)
         .order("avg_rating", { ascending: false });
+      if (user?.id) query = query.neq("id", user.id);
+      const { data } = await query;
       return data ?? [];
     },
   });
