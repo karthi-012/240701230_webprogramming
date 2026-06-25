@@ -71,20 +71,15 @@ function Landing() {
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl text-balance">{t("hero.subtitle")}</p>
 
-            <form onSubmit={submitSearch} className="flex flex-col sm:flex-row gap-2 max-w-xl">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder={t("hero.searchPlaceholder")}
-                  className="pl-11 h-14 text-base rounded-2xl shadow-soft border-border/70"
-                />
-              </div>
-              <Button type="submit" size="lg" className="h-14 px-6 rounded-2xl bg-gradient-hero text-primary-foreground hover:opacity-90 shadow-elegant font-semibold">
-                {t("hero.cta")}
+            <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
+              <Button asChild size="lg" className="h-14 px-6 rounded-2xl bg-gradient-hero text-primary-foreground hover:opacity-90 shadow-elegant font-semibold">
+                <Link to="/browse">{t("hero.cta")}</Link>
               </Button>
-            </form>
+              <Button asChild size="lg" variant="outline" className="h-14 px-6 rounded-2xl font-semibold">
+                <Link to="/onboarding">{t("hero.ctaSecondary")}</Link>
+              </Button>
+            </div>
+
 
             <div className="flex flex-wrap gap-6 pt-2">
               {[
