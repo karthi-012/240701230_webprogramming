@@ -54,8 +54,9 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "Translate the user's spoken query into a short English search phrase (1-4 words) suitable for finding a local service professional. Reply with ONLY the phrase, no punctuation, no quotes." },
+          { role: "system", content: "Extract the single service/profession keyword the user is searching for (e.g. plumber, electrician, carpenter, mechanic, cook, painter, ac technician, welder, driver, cleaner). Reply with ONLY that keyword in lowercase English — no location words like 'near me', no filler, no punctuation, no quotes. 1-2 words max." },
           { role: "user", content: raw },
+
         ],
       }),
     });
