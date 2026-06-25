@@ -14,6 +14,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Star, Phone, MessageCircle, ShieldCheck, MapPin, Calendar, Briefcase } from "lucide-react";
+import { AiProviderSummary } from "@/components/site/AiProviderSummary";
+
 
 export const Route = createFileRoute("/providers/$id")({
   head: () => ({ meta: [{ title: "Professional Profile — SkillConnect" }] }),
@@ -163,12 +165,25 @@ function ProviderPage() {
           </div>
         </div>
 
+        <AiProviderSummary
+          providerId={provider.id}
+          name={provider.profiles?.full_name ?? "Professional"}
+          category={provider.category_slug}
+          headline={provider.headline}
+          bio={provider.bio}
+          experienceYears={provider.experience_years}
+          avgRating={provider.avg_rating}
+          totalReviews={provider.total_reviews}
+          reviewComments={reviews.map((r) => r.comment ?? "").filter(Boolean)}
+        />
+
         {provider.bio && (
           <div className="mt-8">
             <h2 className="font-bold text-lg">{t("provider.about")}</h2>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{provider.bio}</p>
           </div>
         )}
+
 
         {provider.service_areas?.length > 0 && (
           <div className="mt-6">

@@ -9,7 +9,9 @@ import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { VoiceSearchButton } from "@/components/site/VoiceSearchButton";
 import { Search } from "lucide-react";
+
 
 const searchSchema = z.object({ q: z.string().optional() }).catch({});
 
@@ -51,10 +53,14 @@ function BrowseAll() {
   return (
     <div className="container mx-auto px-4 py-10">
       <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{t("browse.title")}</h1>
-      <div className="relative mt-6 max-w-2xl">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("hero.searchPlaceholder")} className="pl-11 h-12 rounded-xl" />
+      <div className="mt-6 flex items-center gap-2 max-w-2xl">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("hero.searchPlaceholder")} className="pl-11 h-12 rounded-xl" />
+        </div>
+        <VoiceSearchButton className="h-12 w-12 rounded-xl shrink-0" onTranscript={(text) => setQ(text)} />
       </div>
+
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
         {categories.map((c) => (
