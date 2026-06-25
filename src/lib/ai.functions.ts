@@ -32,6 +32,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
     const form = new FormData();
     form.append("model", "openai/gpt-4o-mini-transcribe");
     form.append("file", blob, `voice.${ext}`);
+    form.append("prompt", "The speaker is searching for a local service professional like plumber, electrician, carpenter, mechanic, cook, painter, tutor, cleaner.");
 
     const res = await fetch(`${GATEWAY}/audio/transcriptions`, {
       method: "POST",
@@ -43,8 +44,27 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       throw new Error(`Transcription failed (${res.status}): ${msg.slice(0, 200)}`);
     }
     const json = (await res.json()) as { text?: string };
-    return { text: json.text ?? "" };
+    const raw = (json.text ?? "").trim();
+    if (!raw) return { text: "" };
+
+    // Translate/normalize to a short English search keyword so it matches DB categories.
+    const tr = await fetch(`${GATEWAY}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: "Translate the user's spoken query into a short English search phrase (1-4 words) suitable for finding a local service professional. Reply with ONLY the phrase, no punctuation, no quotes." },
+          { role: "user", content: raw },
+        ],
+      }),
+    });
+    if (!tr.ok) return { text: raw };
+    const trJson = (await tr.json()) as { choices?: { message?: { content?: string } }[] };
+    const english = trJson.choices?.[0]?.message?.content?.trim().replace(/^["']|["']$/g, "") ?? raw;
+    return { text: english };
   });
+
 
 /** Generate a short AI summary of a provider from their profile + recent reviews. */
 export const summarizeProvider = createServerFn({ method: "POST" })
