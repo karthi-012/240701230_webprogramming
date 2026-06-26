@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Star, Phone, MessageCircle, ShieldCheck, MapPin, Calendar, Briefcase } from "lucide-react";
+import { Star, Phone, MessageCircle, ShieldCheck, MapPin, Calendar, Briefcase, Heart } from "lucide-react";
 import { AiProviderSummary } from "@/components/site/AiProviderSummary";
 
 
