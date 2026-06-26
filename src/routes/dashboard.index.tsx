@@ -24,6 +24,7 @@ function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [searchQ, setSearchQ] = useState("");
   const [reviewBooking, setReviewBooking] = useState<{ id: string; provider_id: string; name: string } | null>(null);
 
   useEffect(() => {
