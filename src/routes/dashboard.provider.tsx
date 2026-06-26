@@ -94,9 +94,12 @@ function ProviderDashboard() {
     <div className="container mx-auto px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-extrabold tracking-tight">Provider dashboard</h1>
-        <div className="flex items-center gap-2 rounded-full bg-card border border-border/60 px-4 py-2">
-          <Switch checked={provider.is_available} onCheckedChange={toggleAvail} />
-          <span className="text-sm font-semibold">{provider.is_available ? "Available now" : "Unavailable"}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button asChild variant="outline"><Link to="/profile">My profile</Link></Button>
+          <div className="flex items-center gap-2 rounded-full bg-card border border-border/60 px-4 py-2">
+            <Switch checked={provider.is_available} onCheckedChange={toggleAvail} />
+            <span className="text-sm font-semibold">{provider.is_available ? "Available now" : "Unavailable"}</span>
+          </div>
         </div>
       </div>
 
