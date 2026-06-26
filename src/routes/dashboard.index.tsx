@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ProviderCard } from "@/routes/index";
-import { Briefcase, Heart, Calendar, Star } from "lucide-react";
+import { Briefcase, Heart, Calendar, Star, Search } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [{ title: "Dashboard — SkillConnect" }] }),
