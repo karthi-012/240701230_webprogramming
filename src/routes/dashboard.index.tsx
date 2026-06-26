@@ -92,6 +92,32 @@ function Dashboard() {
         </Card>
       )}
 
+      <Card className="mt-6 p-6 md:p-8 bg-gradient-hero/5 border-primary/20 shadow-soft">
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Find a worker near you</h2>
+        <p className="mt-1 text-sm md:text-base text-muted-foreground">Search by service — plumber, electrician, carpenter and more.</p>
+        <form
+          className="mt-4 flex flex-col sm:flex-row gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void navigate({ to: "/browse", search: searchQ.trim() ? { q: searchQ.trim() } : undefined });
+          }}
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              placeholder='Try "plumber" or "AC repair"'
+              className="h-14 pl-12 text-base rounded-xl"
+            />
+          </div>
+          <Button type="submit" size="lg" className="h-14 px-8 text-base bg-gradient-hero text-primary-foreground font-semibold rounded-xl">
+            Browse workers
+          </Button>
+        </form>
+      </Card>
+
+
       <section className="mt-10">
         <h2 className="text-xl font-bold flex items-center gap-2"><Calendar className="h-5 w-5" /> {t("dashboard.myBookings")}</h2>
         <div className="mt-4 grid gap-3">
