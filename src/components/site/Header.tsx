@@ -90,8 +90,12 @@ export function Header() {
         <div className="md:hidden border-t border-border/60 bg-background">
           <div className="container mx-auto px-4 py-3 flex flex-col gap-1">
             <Link to="/browse" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.browse")}</Link>
-            <a href="/#how" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.howItWorks")}</a>
-            <Link to="/onboarding" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.forPros")}</Link>
+            {mode !== "customer" && (
+              <>
+                <a href="/#how" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.howItWorks")}</a>
+                <Link to="/onboarding" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.forPros")}</Link>
+              </>
+            )}
             {user && (
               <>
                 <Link
