@@ -63,6 +63,34 @@ function ProviderPage() {
       (await supabase.from("reviews").select("*, profiles:customer_id(full_name, avatar_url)").eq("provider_id", id).order("created_at", { ascending: false })).data ?? [],
   });
 
+  const { data: favorite } = useQuery({
+    enabled: !!user && user.id !== id,
+    queryKey: ["favorite", user?.id, id],
+    queryFn: async () =>
+      (await supabase.from("favorites").select("provider_id").eq("customer_id", user!.id).eq("provider_id", id).maybeSingle()).data,
+  });
+  const isFavorite = !!favorite;
+
+  const toggleFavorite = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Please sign in to save favorites.");
+      if (user.id === id) throw new Error("You cannot favorite yourself.");
+      if (isFavorite) {
+        const { error } = await supabase.from("favorites").delete().eq("customer_id", user.id).eq("provider_id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("favorites").insert({ customer_id: user.id, provider_id: id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+      qc.invalidateQueries({ queryKey: ["favorite", user?.id, id] });
+      qc.invalidateQueries({ queryKey: ["my-favorites"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const createBooking = useMutation({
     mutationFn: async (vals: { date: string; time: string; address: string; notes: string }) => {
       if (!user) throw new Error("Please sign in to book a service.");
