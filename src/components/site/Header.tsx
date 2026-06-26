@@ -40,12 +40,16 @@ export function Header() {
           <Link to="/browse" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             {t("nav.browse")}
           </Link>
-          <a href="/#how" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            {t("nav.howItWorks")}
-          </a>
-          <Link to="/onboarding" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            {t("nav.forPros")}
-          </Link>
+          {mode !== "customer" && (
+            <>
+              <a href="/#how" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                {t("nav.howItWorks")}
+              </a>
+              <Link to="/onboarding" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                {t("nav.forPros")}
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -86,8 +90,12 @@ export function Header() {
         <div className="md:hidden border-t border-border/60 bg-background">
           <div className="container mx-auto px-4 py-3 flex flex-col gap-1">
             <Link to="/browse" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.browse")}</Link>
-            <a href="/#how" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.howItWorks")}</a>
-            <Link to="/onboarding" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.forPros")}</Link>
+            {mode !== "customer" && (
+              <>
+                <a href="/#how" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.howItWorks")}</a>
+                <Link to="/onboarding" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">{t("nav.forPros")}</Link>
+              </>
+            )}
             {user && (
               <>
                 <Link
