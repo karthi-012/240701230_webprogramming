@@ -40,12 +40,16 @@ export function Header() {
           <Link to="/browse" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             {t("nav.browse")}
           </Link>
-          <a href="/#how" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            {t("nav.howItWorks")}
-          </a>
-          <Link to="/onboarding" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            {t("nav.forPros")}
-          </Link>
+          {mode !== "customer" && (
+            <>
+              <a href="/#how" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                {t("nav.howItWorks")}
+              </a>
+              <Link to="/onboarding" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                {t("nav.forPros")}
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
