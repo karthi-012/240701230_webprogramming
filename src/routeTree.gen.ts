@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ModeRouteImport } from './routes/mode'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -19,6 +20,11 @@ import { Route as ProvidersIdRouteImport } from './routes/providers.$id'
 import { Route as DashboardProviderRouteImport } from './routes/dashboard.provider'
 import { Route as BrowseCategoryRouteImport } from './routes/browse.$category'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/mode': typeof ModeRoute
   '/onboarding': typeof OnboardingRoute
+  '/profile': typeof ProfileRoute
   '/browse/$category': typeof BrowseCategoryRoute
   '/dashboard/provider': typeof DashboardProviderRoute
   '/providers/$id': typeof ProvidersIdRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/mode': typeof ModeRoute
   '/onboarding': typeof OnboardingRoute
+  '/profile': typeof ProfileRoute
   '/browse/$category': typeof BrowseCategoryRoute
   '/dashboard/provider': typeof DashboardProviderRoute
   '/providers/$id': typeof ProvidersIdRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/mode': typeof ModeRoute
   '/onboarding': typeof OnboardingRoute
+  '/profile': typeof ProfileRoute
   '/browse/$category': typeof BrowseCategoryRoute
   '/dashboard/provider': typeof DashboardProviderRoute
   '/providers/$id': typeof ProvidersIdRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mode'
     | '/onboarding'
+    | '/profile'
     | '/browse/$category'
     | '/dashboard/provider'
     | '/providers/$id'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mode'
     | '/onboarding'
+    | '/profile'
     | '/browse/$category'
     | '/dashboard/provider'
     | '/providers/$id'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mode'
     | '/onboarding'
+    | '/profile'
     | '/browse/$category'
     | '/dashboard/provider'
     | '/providers/$id'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ModeRoute: typeof ModeRoute
   OnboardingRoute: typeof OnboardingRoute
+  ProfileRoute: typeof ProfileRoute
   BrowseCategoryRoute: typeof BrowseCategoryRoute
   DashboardProviderRoute: typeof DashboardProviderRoute
   ProvidersIdRoute: typeof ProvidersIdRoute
@@ -149,6 +162,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ModeRoute: ModeRoute,
   OnboardingRoute: OnboardingRoute,
+  ProfileRoute: ProfileRoute,
   BrowseCategoryRoute: BrowseCategoryRoute,
   DashboardProviderRoute: DashboardProviderRoute,
   ProvidersIdRoute: ProvidersIdRoute,
