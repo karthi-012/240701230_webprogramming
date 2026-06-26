@@ -190,6 +190,17 @@ function ProviderPage() {
                 </Button>
               )}
             </div>
+            {!isSelf && (
+              <Button
+                variant="outline"
+                className="font-semibold"
+                onClick={() => toggleFavorite.mutate()}
+                disabled={toggleFavorite.isPending}
+              >
+                <Heart className={`mr-1.5 h-4 w-4 ${isFavorite ? "fill-destructive text-destructive" : ""}`} />
+                {isFavorite ? "Saved to favorites" : "Save to favorites"}
+              </Button>
+            )}
           </div>
         </div>
 
