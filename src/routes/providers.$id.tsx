@@ -181,12 +181,10 @@ function ProviderPage() {
                 </Button>
               )}
               {wa && (
-                <Button
-                  variant="outline"
-                  className="font-semibold"
-                  onClick={() => window.open(buildWhatsAppUrl(wa), "_blank", "noopener,noreferrer")}
-                >
-                  <MessageCircle className="mr-1.5 h-4 w-4" /> {t("provider.whatsapp")}
+                <Button asChild variant="outline" className="font-semibold">
+                  <a href={buildWhatsAppUrl(wa)} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="mr-1.5 h-4 w-4" /> {t("provider.whatsapp")}
+                  </a>
                 </Button>
               )}
             </div>
