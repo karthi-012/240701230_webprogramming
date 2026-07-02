@@ -174,6 +174,7 @@ function Dashboard() {
 
 function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id: string; name: string } | null; onClose: () => void }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
@@ -196,7 +197,7 @@ function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Thanks for your review!");
+      toast.success(t("dashboard.thanksReview"));
       qc.invalidateQueries({ queryKey: ["my-reviews"] });
       qc.invalidateQueries({ queryKey: ["reviews"] });
       onClose();
@@ -208,8 +209,8 @@ function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id
     <Dialog open={!!booking} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Rate {booking?.name}</DialogTitle>
-          <DialogDescription>Your feedback helps other customers choose wisely.</DialogDescription>
+          <DialogTitle>{t("dashboard.rate")} {booking?.name}</DialogTitle>
+          <DialogDescription>{t("dashboard.reviewHelp")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="flex items-center justify-center gap-1" onMouseLeave={() => setHover(0)}>
@@ -231,18 +232,18 @@ function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Tell others about the quality of work, punctuality, professionalism…"
+            placeholder={t("dashboard.reviewPlaceholder")}
             rows={4}
           />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
           <Button
             disabled={submit.isPending}
             onClick={() => submit.mutate()}
             className="bg-gradient-hero text-primary-foreground"
           >
-            {submit.isPending ? "Submitting…" : "Submit review"}
+            {submit.isPending ? t("dashboard.submitting") : t("dashboard.submitReview")}
           </Button>
         </DialogFooter>
       </DialogContent>
