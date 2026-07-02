@@ -309,7 +309,7 @@ function ProviderPage() {
         onOpenChange={setBookOpen}
         submitting={createBooking.isPending}
         onSubmit={(vals) => createBooking.mutate(vals)}
-        providerName={provider.profiles?.full_name ?? "Professional"}
+        providerName={provider.profiles?.full_name ?? t("common.professional")}
       />
     </div>
   );
