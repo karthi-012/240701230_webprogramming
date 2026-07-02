@@ -75,9 +75,9 @@ function Dashboard() {
           <h1 className="text-3xl font-extrabold tracking-tight">{profile?.full_name ?? user.email}</h1>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button asChild variant="outline"><Link to="/profile">My profile</Link></Button>
+          <Button asChild variant="outline"><Link to="/profile">{t("dashboard.myProfile")}</Link></Button>
           {providerProfile ? (
-            <Button asChild variant="outline"><Link to="/dashboard/provider">Provider dashboard</Link></Button>
+            <Button asChild variant="outline"><Link to="/dashboard/provider">{t("dashboard.providerDashboard")}</Link></Button>
           ) : (
             <Button asChild className="bg-gradient-hero text-primary-foreground"><Link to="/onboarding">{t("dashboard.becomePro")}</Link></Button>
           )}
@@ -91,7 +91,7 @@ function Dashboard() {
             <div className="font-bold">{t("dashboard.becomePro")}</div>
             <div className="text-sm text-muted-foreground">{t("dashboard.becomeProSub")}</div>
           </div>
-          <Button asChild><Link to="/onboarding">Start</Link></Button>
+          <Button asChild><Link to="/onboarding">{t("dashboard.start")}</Link></Button>
         </Card>
       )}
 
