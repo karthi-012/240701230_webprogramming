@@ -223,7 +223,7 @@ function ProviderPage() {
                 disabled={toggleFavorite.isPending}
               >
                 <Heart className={`mr-1.5 h-4 w-4 ${isFavorite ? "fill-destructive text-destructive" : ""}`} />
-                {isFavorite ? "Saved to favorites" : "Save to favorites"}
+                {isFavorite ? t("common.savedFav") : t("common.saveFav")}
               </Button>
             )}
           </div>
@@ -231,7 +231,7 @@ function ProviderPage() {
 
         <AiProviderSummary
           providerId={provider.id}
-          name={provider.profiles?.full_name ?? "Professional"}
+          name={provider.profiles?.full_name ?? t("common.professional")}
           category={provider.category_slug}
           headline={provider.headline}
           bio={provider.bio}
@@ -277,7 +277,7 @@ function ProviderPage() {
       <section className="mt-10">
         <h2 className="text-2xl font-extrabold tracking-tight mb-4">{t("provider.reviews")} ({reviews.length})</h2>
         {reviews.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground border-dashed">No reviews yet.</Card>
+          <Card className="p-8 text-center text-muted-foreground border-dashed">{t("common.noReviews")}</Card>
         ) : (
           <div className="grid md:grid-cols-2 gap-3">
             {reviews.map((r) => (
@@ -287,7 +287,7 @@ function ProviderPage() {
                     {(r.profiles?.full_name ?? "?").slice(0, 1).toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <div className="font-semibold text-sm">{r.profiles?.full_name ?? "Customer"}</div>
+                    <div className="font-semibold text-sm">{r.profiles?.full_name ?? t("common.customer")}</div>
                     <div className="flex gap-0.5 text-accent">
                       {Array.from({ length: r.rating }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
                     </div>
@@ -301,7 +301,7 @@ function ProviderPage() {
       </section>
 
       <div className="mt-12 text-center">
-        <Link to="/browse" className="text-sm text-muted-foreground hover:text-foreground">← Back to browse</Link>
+        <Link to="/browse" className="text-sm text-muted-foreground hover:text-foreground">{t("common.backToBrowse")}</Link>
       </div>
 
       <BookingDialog
@@ -309,7 +309,7 @@ function ProviderPage() {
         onOpenChange={setBookOpen}
         submitting={createBooking.isPending}
         onSubmit={(vals) => createBooking.mutate(vals)}
-        providerName={provider.profiles?.full_name ?? "Professional"}
+        providerName={provider.profiles?.full_name ?? t("common.professional")}
       />
     </div>
   );

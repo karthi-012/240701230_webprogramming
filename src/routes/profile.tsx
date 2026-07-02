@@ -61,7 +61,7 @@ function ProfilePage() {
       .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Profile updated");
+    toast.success(t("profile.updated"));
     void qc.invalidateQueries({ queryKey: ["profile", user.id] });
   };
 
@@ -81,20 +81,20 @@ function ProfilePage() {
     const { error: updErr } = await supabase.from("profiles").update({ avatar_url: signed.signedUrl }).eq("id", user.id);
     setUploading(false);
     if (updErr) return toast.error(updErr.message);
-    toast.success("Photo updated");
+    toast.success(t("profile.photoUpdated"));
     void qc.invalidateQueries({ queryKey: ["profile", user.id] });
   };
 
   if (loading || !user) {
-    return <div className="container mx-auto py-20 text-center text-muted-foreground">Loading…</div>;
+    return <div className="container mx-auto py-20 text-center text-muted-foreground">{t("common.loading")}</div>;
   }
 
   const initial = (fullName || user.email || "?").slice(0, 1).toUpperCase();
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-2xl">
-      <h1 className="text-3xl font-extrabold tracking-tight">{t("profile.title", "My profile")}</h1>
-      <p className="mt-1 text-muted-foreground">Manage your personal details and profile photo.</p>
+      <h1 className="text-3xl font-extrabold tracking-tight">{t("profile.title")}</h1>
+      <p className="mt-1 text-muted-foreground">{t("profile.subtitle")}</p>
 
       <Card className="mt-6 p-6 md:p-8 shadow-soft">
         <div className="flex items-center gap-5">
@@ -109,44 +109,44 @@ function ProfilePage() {
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
               className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full bg-primary text-primary-foreground grid place-items-center shadow-md hover:opacity-90 disabled:opacity-50"
-              aria-label="Change profile photo"
+              aria-label={t("profile.changePhoto")}
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onUpload} />
           </div>
           <div className="min-w-0">
-            <div className="font-bold text-lg truncate">{fullName || "Unnamed"}</div>
+            <div className="font-bold text-lg truncate">{fullName || t("profile.unnamed")}</div>
             <div className="text-sm text-muted-foreground truncate">{user.email}</div>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               className="mt-1 text-sm font-semibold text-primary hover:underline"
             >
-              {uploading ? "Uploading…" : "Change photo"}
+              {uploading ? t("profile.uploading") : t("profile.changePhoto")}
             </button>
           </div>
         </div>
 
         <form className="mt-8 grid gap-4" onSubmit={onSave}>
           <div>
-            <Label htmlFor="p-name">Full name</Label>
-            <Input id="p-name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} placeholder="Your name" />
+            <Label htmlFor="p-name">{t("profile.fullName")}</Label>
+            <Input id="p-name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} placeholder={t("profile.namePh")} />
           </div>
           <div>
-            <Label htmlFor="p-phone">Phone</Label>
-            <Input id="p-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} placeholder="10-digit mobile" inputMode="tel" />
+            <Label htmlFor="p-phone">{t("profile.phone")}</Label>
+            <Input id="p-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} placeholder={t("profile.phonePh")} inputMode="tel" />
           </div>
           <div>
-            <Label htmlFor="p-city">City</Label>
-            <Input id="p-city" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} placeholder="e.g. Chennai" />
+            <Label htmlFor="p-city">{t("profile.city")}</Label>
+            <Input id="p-city" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} placeholder={t("profile.cityPh")} />
           </div>
           <div className="flex justify-end gap-2 mt-2">
             <Button type="button" variant="ghost" onClick={() => navigate({ to: "/dashboard" })}>
-              Cancel
+              {t("profile.cancel")}
             </Button>
             <Button type="submit" disabled={saving} className="bg-gradient-hero text-primary-foreground font-semibold">
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? t("profile.saving") : t("profile.save")}
             </Button>
           </div>
         </form>
@@ -154,7 +154,7 @@ function ProfilePage() {
 
       <Card className="mt-6 p-6 flex items-center gap-3 text-sm text-muted-foreground">
         <User className="h-4 w-4" />
-        Your profile details are shown to customers when they view your service listing.
+        {t("profile.hint")}
       </Card>
     </div>
   );

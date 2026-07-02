@@ -65,7 +65,7 @@ function Dashboard() {
       .eq("customer_id", user!.id)).data ?? [],
   });
 
-  if (loading || !user) return <div className="container mx-auto py-20 text-center text-muted-foreground">Loading…</div>;
+  if (loading || !user) return <div className="container mx-auto py-20 text-center text-muted-foreground">{t("common.loading")}</div>;
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -75,9 +75,9 @@ function Dashboard() {
           <h1 className="text-3xl font-extrabold tracking-tight">{profile?.full_name ?? user.email}</h1>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button asChild variant="outline"><Link to="/profile">My profile</Link></Button>
+          <Button asChild variant="outline"><Link to="/profile">{t("dashboard.myProfile")}</Link></Button>
           {providerProfile ? (
-            <Button asChild variant="outline"><Link to="/dashboard/provider">Provider dashboard</Link></Button>
+            <Button asChild variant="outline"><Link to="/dashboard/provider">{t("dashboard.providerDashboard")}</Link></Button>
           ) : (
             <Button asChild className="bg-gradient-hero text-primary-foreground"><Link to="/onboarding">{t("dashboard.becomePro")}</Link></Button>
           )}
@@ -91,13 +91,13 @@ function Dashboard() {
             <div className="font-bold">{t("dashboard.becomePro")}</div>
             <div className="text-sm text-muted-foreground">{t("dashboard.becomeProSub")}</div>
           </div>
-          <Button asChild><Link to="/onboarding">Start</Link></Button>
+          <Button asChild><Link to="/onboarding">{t("dashboard.start")}</Link></Button>
         </Card>
       )}
 
       <Card className="mt-6 p-6 md:p-8 bg-gradient-hero/5 border-primary/20 shadow-soft">
-        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Find a worker near you</h2>
-        <p className="mt-1 text-sm md:text-base text-muted-foreground">Search by service — plumber, electrician, carpenter and more.</p>
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">{t("dashboard.findWorker")}</h2>
+        <p className="mt-1 text-sm md:text-base text-muted-foreground">{t("dashboard.findWorkerSub")}</p>
         <form
           className="mt-4 flex flex-col sm:flex-row gap-2"
           onSubmit={(e) => {
@@ -110,12 +110,12 @@ function Dashboard() {
             <Input
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
-              placeholder='Try "plumber" or "AC repair"'
+              placeholder={t("dashboard.searchPlaceholder")}
               className="h-14 pl-12 text-base rounded-xl"
             />
           </div>
           <Button type="submit" size="lg" className="h-14 px-8 text-base bg-gradient-hero text-primary-foreground font-semibold rounded-xl">
-            Browse workers
+            {t("dashboard.browseWorkers")}
           </Button>
         </form>
       </Card>
@@ -125,9 +125,9 @@ function Dashboard() {
         <h2 className="text-xl font-bold flex items-center gap-2"><Calendar className="h-5 w-5" /> {t("dashboard.myBookings")}</h2>
         <div className="mt-4 grid gap-3">
           {bookings.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground border-dashed">No bookings yet.</Card>
+            <Card className="p-8 text-center text-muted-foreground border-dashed">{t("dashboard.noBookings")}</Card>
           ) : bookings.map((b) => {
-            const name = b.providers?.profiles?.full_name ?? "Provider";
+            const name = b.providers?.profiles?.full_name ?? t("common.provider");
             const isCompleted = b.status === "completed";
             const alreadyReviewed = reviewedBookingIds.has(b.id);
             return (
@@ -140,11 +140,11 @@ function Dashboard() {
                   <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold capitalize">{b.status}</span>
                   {isCompleted && !alreadyReviewed && (
                     <Button size="sm" onClick={() => setReviewBooking({ id: b.id, provider_id: b.provider_id, name })}>
-                      <Star className="mr-1 h-3.5 w-3.5" /> Write review
+                      <Star className="mr-1 h-3.5 w-3.5" /> {t("dashboard.writeReview")}
                     </Button>
                   )}
                   {isCompleted && alreadyReviewed && (
-                    <span className="text-xs text-success font-semibold">✓ Reviewed</span>
+                    <span className="text-xs text-success font-semibold">✓ {t("dashboard.reviewed")}</span>
                   )}
                 </div>
               </Card>
@@ -156,7 +156,7 @@ function Dashboard() {
       <section className="mt-10">
         <h2 className="text-xl font-bold flex items-center gap-2"><Heart className="h-5 w-5" /> {t("dashboard.favorites")}</h2>
         {favorites.length === 0 ? (
-          <Card className="mt-4 p-8 text-center text-muted-foreground border-dashed">No saved pros yet.</Card>
+          <Card className="mt-4 p-8 text-center text-muted-foreground border-dashed">{t("dashboard.noFavorites")}</Card>
         ) : (
           <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {favorites.filter((f) => f.providers).map((f) => <ProviderCard key={f.provider_id} p={f.providers!} />)}
@@ -174,6 +174,7 @@ function Dashboard() {
 
 function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id: string; name: string } | null; onClose: () => void }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
@@ -196,7 +197,7 @@ function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Thanks for your review!");
+      toast.success(t("dashboard.thanksReview"));
       qc.invalidateQueries({ queryKey: ["my-reviews"] });
       qc.invalidateQueries({ queryKey: ["reviews"] });
       onClose();
@@ -208,8 +209,8 @@ function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id
     <Dialog open={!!booking} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Rate {booking?.name}</DialogTitle>
-          <DialogDescription>Your feedback helps other customers choose wisely.</DialogDescription>
+          <DialogTitle>{t("dashboard.rate")} {booking?.name}</DialogTitle>
+          <DialogDescription>{t("dashboard.reviewHelp")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="flex items-center justify-center gap-1" onMouseLeave={() => setHover(0)}>
@@ -231,18 +232,18 @@ function ReviewDialog({ booking, onClose }: { booking: { id: string; provider_id
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Tell others about the quality of work, punctuality, professionalism…"
+            placeholder={t("dashboard.reviewPlaceholder")}
             rows={4}
           />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
           <Button
             disabled={submit.isPending}
             onClick={() => submit.mutate()}
             className="bg-gradient-hero text-primary-foreground"
           >
-            {submit.isPending ? "Submitting…" : "Submit review"}
+            {submit.isPending ? t("dashboard.submitting") : t("dashboard.submitReview")}
           </Button>
         </DialogFooter>
       </DialogContent>
