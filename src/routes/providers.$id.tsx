@@ -223,7 +223,7 @@ function ProviderPage() {
                 disabled={toggleFavorite.isPending}
               >
                 <Heart className={`mr-1.5 h-4 w-4 ${isFavorite ? "fill-destructive text-destructive" : ""}`} />
-                {isFavorite ? "Saved to favorites" : "Save to favorites"}
+                {isFavorite ? t("common.savedFav") : t("common.saveFav")}
               </Button>
             )}
           </div>
