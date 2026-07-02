@@ -26,10 +26,35 @@ export const Route = createFileRoute("/providers/$id")({
 
 // Build a WhatsApp deep-link safely. Strips non-digits and prefixes a default
 // country code (India, 91) when the user stored a 10-digit local number.
-function buildWhatsAppUrl(raw: string) {
+function getPhoneDigits(raw: string) {
   let digits = raw.replace(/\D/g, "");
   if (digits.length === 10) digits = "91" + digits;
-  return `https://wa.me/${digits}`;
+  return digits;
+}
+
+function buildWhatsAppUrl(raw: string) {
+  const digits = getPhoneDigits(raw);
+  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) return `https://wa.me/${digits}`;
+  return `https://web.whatsapp.com/send?phone=${digits}`;
+}
+
+function buildTelUrl(raw: string) {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) digits = "+91" + digits;
+  else if (digits && !digits.startsWith("+")) digits = "+" + digits;
+  return `tel:${digits}`;
+}
+
+function copyPhoneFallback(raw: string) {
+  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) return;
+  const displayNumber = buildTelUrl(raw).replace("tel:", "");
+  navigator.clipboard?.writeText(displayNumber).then(() => {
+    toast.info("Phone number copied. If your laptop has no dialer app, call it from your phone.");
+  }).catch(() => {
+    toast.info(`Call this number: ${displayNumber}`);
+  });
 }
 
 function ProviderPage() {
@@ -177,7 +202,9 @@ function ProviderPage() {
             <div className="grid grid-cols-2 gap-2">
               {phone && (
                 <Button asChild variant="outline" className="font-semibold">
-                  <a href={`tel:${phone}`}><Phone className="mr-1.5 h-4 w-4" /> {t("provider.callNow")}</a>
+                  <a href={buildTelUrl(phone)} onClick={() => copyPhoneFallback(phone)}>
+                    <Phone className="mr-1.5 h-4 w-4" /> {t("provider.callNow")}
+                  </a>
                 </Button>
               )}
               {wa && (
