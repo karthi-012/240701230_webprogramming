@@ -287,7 +287,7 @@ function ProviderPage() {
                     {(r.profiles?.full_name ?? "?").slice(0, 1).toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <div className="font-semibold text-sm">{r.profiles?.full_name ?? "Customer"}</div>
+                    <div className="font-semibold text-sm">{r.profiles?.full_name ?? t("common.customer")}</div>
                     <div className="flex gap-0.5 text-accent">
                       {Array.from({ length: r.rating }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
                     </div>
