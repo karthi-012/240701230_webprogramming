@@ -81,12 +81,12 @@ function ProfilePage() {
     const { error: updErr } = await supabase.from("profiles").update({ avatar_url: signed.signedUrl }).eq("id", user.id);
     setUploading(false);
     if (updErr) return toast.error(updErr.message);
-    toast.success("Photo updated");
+    toast.success(t("profile.photoUpdated"));
     void qc.invalidateQueries({ queryKey: ["profile", user.id] });
   };
 
   if (loading || !user) {
-    return <div className="container mx-auto py-20 text-center text-muted-foreground">Loading…</div>;
+    return <div className="container mx-auto py-20 text-center text-muted-foreground">{t("common.loading")}</div>;
   }
 
   const initial = (fullName || user.email || "?").slice(0, 1).toUpperCase();
