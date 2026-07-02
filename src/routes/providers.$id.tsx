@@ -277,7 +277,7 @@ function ProviderPage() {
       <section className="mt-10">
         <h2 className="text-2xl font-extrabold tracking-tight mb-4">{t("provider.reviews")} ({reviews.length})</h2>
         {reviews.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground border-dashed">No reviews yet.</Card>
+          <Card className="p-8 text-center text-muted-foreground border-dashed">{t("common.noReviews")}</Card>
         ) : (
           <div className="grid md:grid-cols-2 gap-3">
             {reviews.map((r) => (
