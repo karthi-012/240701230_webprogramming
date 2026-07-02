@@ -65,7 +65,7 @@ function Dashboard() {
       .eq("customer_id", user!.id)).data ?? [],
   });
 
-  if (loading || !user) return <div className="container mx-auto py-20 text-center text-muted-foreground">Loading…</div>;
+  if (loading || !user) return <div className="container mx-auto py-20 text-center text-muted-foreground">{t("common.loading")}</div>;
 
   return (
     <div className="container mx-auto px-4 py-10">
