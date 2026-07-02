@@ -125,9 +125,9 @@ function Dashboard() {
         <h2 className="text-xl font-bold flex items-center gap-2"><Calendar className="h-5 w-5" /> {t("dashboard.myBookings")}</h2>
         <div className="mt-4 grid gap-3">
           {bookings.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground border-dashed">No bookings yet.</Card>
+            <Card className="p-8 text-center text-muted-foreground border-dashed">{t("dashboard.noBookings")}</Card>
           ) : bookings.map((b) => {
-            const name = b.providers?.profiles?.full_name ?? "Provider";
+            const name = b.providers?.profiles?.full_name ?? t("common.provider");
             const isCompleted = b.status === "completed";
             const alreadyReviewed = reviewedBookingIds.has(b.id);
             return (
@@ -140,11 +140,11 @@ function Dashboard() {
                   <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold capitalize">{b.status}</span>
                   {isCompleted && !alreadyReviewed && (
                     <Button size="sm" onClick={() => setReviewBooking({ id: b.id, provider_id: b.provider_id, name })}>
-                      <Star className="mr-1 h-3.5 w-3.5" /> Write review
+                      <Star className="mr-1 h-3.5 w-3.5" /> {t("dashboard.writeReview")}
                     </Button>
                   )}
                   {isCompleted && alreadyReviewed && (
-                    <span className="text-xs text-success font-semibold">✓ Reviewed</span>
+                    <span className="text-xs text-success font-semibold">✓ {t("dashboard.reviewed")}</span>
                   )}
                 </div>
               </Card>
@@ -156,7 +156,7 @@ function Dashboard() {
       <section className="mt-10">
         <h2 className="text-xl font-bold flex items-center gap-2"><Heart className="h-5 w-5" /> {t("dashboard.favorites")}</h2>
         {favorites.length === 0 ? (
-          <Card className="mt-4 p-8 text-center text-muted-foreground border-dashed">No saved pros yet.</Card>
+          <Card className="mt-4 p-8 text-center text-muted-foreground border-dashed">{t("dashboard.noFavorites")}</Card>
         ) : (
           <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {favorites.filter((f) => f.providers).map((f) => <ProviderCard key={f.provider_id} p={f.providers!} />)}
