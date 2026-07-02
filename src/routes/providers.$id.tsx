@@ -301,7 +301,7 @@ function ProviderPage() {
       </section>
 
       <div className="mt-12 text-center">
-        <Link to="/browse" className="text-sm text-muted-foreground hover:text-foreground">← Back to browse</Link>
+        <Link to="/browse" className="text-sm text-muted-foreground hover:text-foreground">{t("common.backToBrowse")}</Link>
       </div>
 
       <BookingDialog
