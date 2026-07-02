@@ -231,7 +231,7 @@ function ProviderPage() {
 
         <AiProviderSummary
           providerId={provider.id}
-          name={provider.profiles?.full_name ?? "Professional"}
+          name={provider.profiles?.full_name ?? t("common.professional")}
           category={provider.category_slug}
           headline={provider.headline}
           bio={provider.bio}
