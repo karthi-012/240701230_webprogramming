@@ -96,8 +96,8 @@ function Dashboard() {
       )}
 
       <Card className="mt-6 p-6 md:p-8 bg-gradient-hero/5 border-primary/20 shadow-soft">
-        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Find a worker near you</h2>
-        <p className="mt-1 text-sm md:text-base text-muted-foreground">Search by service — plumber, electrician, carpenter and more.</p>
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">{t("dashboard.findWorker")}</h2>
+        <p className="mt-1 text-sm md:text-base text-muted-foreground">{t("dashboard.findWorkerSub")}</p>
         <form
           className="mt-4 flex flex-col sm:flex-row gap-2"
           onSubmit={(e) => {
@@ -110,12 +110,12 @@ function Dashboard() {
             <Input
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
-              placeholder='Try "plumber" or "AC repair"'
+              placeholder={t("dashboard.searchPlaceholder")}
               className="h-14 pl-12 text-base rounded-xl"
             />
           </div>
           <Button type="submit" size="lg" className="h-14 px-8 text-base bg-gradient-hero text-primary-foreground font-semibold rounded-xl">
-            Browse workers
+            {t("dashboard.browseWorkers")}
           </Button>
         </form>
       </Card>
