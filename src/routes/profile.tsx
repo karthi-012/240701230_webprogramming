@@ -61,7 +61,7 @@ function ProfilePage() {
       .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Profile updated");
+    toast.success(t("profile.updated"));
     void qc.invalidateQueries({ queryKey: ["profile", user.id] });
   };
 
