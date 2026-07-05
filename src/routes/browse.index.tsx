@@ -9,11 +9,16 @@ import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { VoiceSearchButton } from "@/components/site/VoiceSearchButton";
-import { Search } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
+import { toast } from "sonner";
 
 
-const searchSchema = z.object({ q: z.string().optional() }).catch({});
+const searchSchema = z.object({
+  q: z.string().optional(),
+  near: z.union([z.literal("1"), z.literal("0")]).optional(),
+}).catch({});
 
 export const Route = createFileRoute("/browse/")({
   validateSearch: searchSchema,
@@ -24,9 +29,17 @@ export const Route = createFileRoute("/browse/")({
 function BrowseAll() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
-  const { q: initQ } = Route.useSearch();
+  const { q: initQ, near: initNear } = Route.useSearch();
   const [q, setQ] = useState(initQ ?? "");
+  const [near, setNear] = useState(initNear === "1");
   const { user } = useAuth();
+
+  const { data: myProfile } = useQuery({
+    enabled: !!user,
+    queryKey: ["profile-city", user?.id],
+    queryFn: async () => (await supabase.from("profiles").select("city").eq("id", user!.id).maybeSingle()).data,
+  });
+  const myCity = (myProfile?.city ?? "").trim();
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -34,21 +47,30 @@ function BrowseAll() {
   });
 
   const { data: providers = [] } = useQuery({
-    queryKey: ["providers", q, user?.id ?? null],
+    queryKey: ["providers", q, near, myCity, user?.id ?? null],
     queryFn: async () => {
       let query = supabase
         .from("providers")
-        .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
+        .select("id, headline, category_slug, city, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .order("avg_rating", { ascending: false })
         .limit(60);
       if (q.trim()) {
         query = query.or(`headline.ilike.%${q}%,city.ilike.%${q}%,category_slug.ilike.%${q}%`);
+      }
+      if (near && myCity) {
+        query = query.or(`city.ilike.%${myCity}%,service_areas.cs.{${myCity}}`);
       }
       if (user?.id) query = query.neq("id", user.id);
       const { data } = await query;
       return data ?? [];
     },
   });
+
+  const handleNearClick = () => {
+    if (!user) { toast.error(t("nearby.signInFirst")); return; }
+    if (!myCity) { toast.error(t("nearby.setCityFirst")); return; }
+    setNear((v) => !v);
+  };
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -59,6 +81,21 @@ function BrowseAll() {
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("hero.searchPlaceholder")} className="pl-11 h-12 rounded-xl" />
         </div>
         <VoiceSearchButton className="h-12 w-12 rounded-xl shrink-0" onTranscript={(text) => setQ(text)} />
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant={near ? "default" : "outline"}
+          onClick={handleNearClick}
+          className={near ? "bg-gradient-hero text-primary-foreground" : ""}
+        >
+          <MapPin className="h-4 w-4" />
+          {near ? t("nearby.showingNear", { city: myCity || "…" }) : t("nearby.fetchNearby")}
+        </Button>
+        {near && (
+          <span className="text-xs text-muted-foreground">{t("nearby.hint")}</span>
+        )}
       </div>
 
 
@@ -74,7 +111,9 @@ function BrowseAll() {
 
       <div className="mt-8">
         {providers.length === 0 ? (
-          <Card className="p-10 text-center border-dashed text-muted-foreground">{t("browse.empty")}</Card>
+          <Card className="p-10 text-center border-dashed text-muted-foreground">
+            {near && myCity ? t("nearby.emptyNear", { city: myCity }) : t("browse.empty")}
+          </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {providers.map((p) => <ProviderCard key={p.id} p={p} />)}
