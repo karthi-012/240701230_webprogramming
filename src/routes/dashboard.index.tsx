@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ProviderCard } from "@/routes/index";
-import { Briefcase, Heart, Calendar, Star, Search } from "lucide-react";
+import { Briefcase, Heart, Calendar, Star, Search, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [{ title: "Dashboard — SkillConnect" }] }),
