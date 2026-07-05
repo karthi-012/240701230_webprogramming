@@ -125,20 +125,13 @@ function Dashboard() {
             size="lg"
             className="h-12 rounded-xl border-primary/40 text-primary hover:bg-primary/5"
             onClick={() => {
-              if (!profile?.city?.trim()) {
-                toast.error(t("nearby.setCityFirst"));
-                void navigate({ to: "/profile" });
-                return;
-              }
               void navigate({ to: "/browse", search: { ...(searchQ.trim() ? { q: searchQ.trim() } : {}), near: "1" } });
             }}
           >
             <MapPin className="h-4 w-4" />
             {t("nearby.fetchNearby")}
           </Button>
-          {!profile?.city?.trim() && (
-            <p className="mt-2 text-xs text-muted-foreground">{t("nearby.setCityFirst")}</p>
-          )}
+          <p className="mt-2 text-xs text-muted-foreground">{t("nearby.locationConsent")}</p>
         </div>
       </Card>
 
