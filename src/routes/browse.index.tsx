@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VoiceSearchButton } from "@/components/site/VoiceSearchButton";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -26,12 +26,38 @@ export const Route = createFileRoute("/browse/")({
   component: BrowseAll,
 });
 
+async function detectCityFromGeolocation(): Promise<string> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    throw new Error("geo-unsupported");
+  }
+  const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 5 * 60 * 1000,
+    });
+  });
+  const { latitude, longitude } = pos.coords;
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
+    { headers: { "Accept": "application/json" } },
+  );
+  if (!res.ok) throw new Error("reverse-failed");
+  const json = await res.json();
+  const a = json.address ?? {};
+  const city: string = a.city || a.town || a.village || a.suburb || a.county || a.state_district || a.state || "";
+  if (!city) throw new Error("no-city");
+  return city;
+}
+
 function BrowseAll() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
   const { q: initQ, near: initNear } = Route.useSearch();
   const [q, setQ] = useState(initQ ?? "");
   const [near, setNear] = useState(initNear === "1");
+  const [detectedCity, setDetectedCity] = useState<string>("");
+  const [detecting, setDetecting] = useState(false);
   const { user } = useAuth();
 
   const { data: myProfile } = useQuery({
@@ -39,7 +65,8 @@ function BrowseAll() {
     queryKey: ["profile-city", user?.id],
     queryFn: async () => (await supabase.from("profiles").select("city").eq("id", user!.id).maybeSingle()).data,
   });
-  const myCity = (myProfile?.city ?? "").trim();
+  const profileCity = (myProfile?.city ?? "").trim();
+  const activeCity = detectedCity || profileCity;
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -47,7 +74,7 @@ function BrowseAll() {
   });
 
   const { data: providers = [] } = useQuery({
-    queryKey: ["providers", q, near, myCity, user?.id ?? null],
+    queryKey: ["providers", q, near, activeCity, user?.id ?? null],
     queryFn: async () => {
       let query = supabase
         .from("providers")
@@ -57,8 +84,8 @@ function BrowseAll() {
       if (q.trim()) {
         query = query.or(`headline.ilike.%${q}%,city.ilike.%${q}%,category_slug.ilike.%${q}%`);
       }
-      if (near && myCity) {
-        query = query.or(`city.ilike.%${myCity}%,service_areas.cs.{${myCity}}`);
+      if (near && activeCity) {
+        query = query.or(`city.ilike.%${activeCity}%,service_areas.cs.{${activeCity}}`);
       }
       if (user?.id) query = query.neq("id", user.id);
       const { data } = await query;
@@ -66,10 +93,28 @@ function BrowseAll() {
     },
   });
 
-  const handleNearClick = () => {
-    if (!user) { toast.error(t("nearby.signInFirst")); return; }
-    if (!myCity) { toast.error(t("nearby.setCityFirst")); return; }
-    setNear((v) => !v);
+  const handleNearClick = async () => {
+    if (near) { setNear(false); return; }
+    setDetecting(true);
+    try {
+      const city = await detectCityFromGeolocation();
+      setDetectedCity(city);
+      setNear(true);
+      toast.success(t("nearby.detected", { city }));
+    } catch (err: unknown) {
+      const code = (err as GeolocationPositionError | Error & { code?: number })?.code;
+      if (code === 1) {
+        toast.error(t("nearby.permissionDenied"));
+      } else if (profileCity) {
+        setDetectedCity("");
+        setNear(true);
+        toast.message(t("nearby.usingProfileCity", { city: profileCity }));
+      } else {
+        toast.error(t("nearby.locationFailed"));
+      }
+    } finally {
+      setDetecting(false);
+    }
   };
 
   return (
@@ -88,10 +133,15 @@ function BrowseAll() {
           type="button"
           variant={near ? "default" : "outline"}
           onClick={handleNearClick}
+          disabled={detecting}
           className={near ? "bg-gradient-hero text-primary-foreground" : ""}
         >
-          <MapPin className="h-4 w-4" />
-          {near ? t("nearby.showingNear", { city: myCity || "…" }) : t("nearby.fetchNearby")}
+          {detecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+          {detecting
+            ? t("nearby.detecting")
+            : near
+              ? t("nearby.showingNear", { city: activeCity || "…" })
+              : t("nearby.fetchNearby")}
         </Button>
         {near && (
           <span className="text-xs text-muted-foreground">{t("nearby.hint")}</span>
@@ -112,7 +162,7 @@ function BrowseAll() {
       <div className="mt-8">
         {providers.length === 0 ? (
           <Card className="p-10 text-center border-dashed text-muted-foreground">
-            {near && myCity ? t("nearby.emptyNear", { city: myCity }) : t("browse.empty")}
+            {near && activeCity ? t("nearby.emptyNear", { city: activeCity }) : t("browse.empty")}
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
