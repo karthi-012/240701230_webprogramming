@@ -55,7 +55,7 @@ function BrowseAll() {
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
   const { q: initQ, near: initNear } = Route.useSearch();
   const [q, setQ] = useState(initQ ?? "");
-  const [near, setNear] = useState(initNear === "1");
+  const [near, setNear] = useState(false);
   const [detectedCity, setDetectedCity] = useState<string>("");
   const [detecting, setDetecting] = useState(false);
   const { user } = useAuth();
