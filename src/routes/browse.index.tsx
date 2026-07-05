@@ -102,7 +102,7 @@ function BrowseAll() {
       setNear(true);
       toast.success(t("nearby.detected", { city }));
     } catch (err: unknown) {
-      const code = (err as GeolocationPositionError | Error & { code?: number })?.code;
+      const code = (err as GeolocationPositionError | (Error & { code?: number }))?.code;
       if (code === 1) {
         toast.error(t("nearby.permissionDenied"));
       } else if (profileCity) {
@@ -116,6 +116,16 @@ function BrowseAll() {
       setDetecting(false);
     }
   };
+
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (autoRan.current) return;
+    if (initNear === "1" && !detectedCity && !detecting) {
+      autoRan.current = true;
+      void handleNearClick();
+    }
+     
+  }, [initNear]);
 
   return (
     <div className="container mx-auto px-4 py-10">
