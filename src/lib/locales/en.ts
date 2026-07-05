@@ -140,6 +140,14 @@ export const en = {
     professional: "Professional",
     provider: "Provider",
   },
+  nearby: {
+    fetchNearby: "Fetch nearby workers",
+    showingNear: "Showing near {{city}}",
+    hint: "Filtered by your city from your profile.",
+    setCityFirst: "Add your city in your profile to find nearby workers.",
+    signInFirst: "Sign in to find nearby workers.",
+    emptyNear: "No workers found near {{city}} yet.",
+  },
   footer: {
     rights: "All rights reserved.",
     about: "About",
