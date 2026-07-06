@@ -26,7 +26,7 @@ export const Route = createFileRoute("/browse/")({
   component: BrowseAll,
 });
 
-async function detectCityFromGeolocation(): Promise<string> {
+async function detectCityFromGeolocation(): Promise<{ city: string; accuracy: number }> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     throw new Error("geo-unsupported");
   }
@@ -34,21 +34,22 @@ async function detectCityFromGeolocation(): Promise<string> {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
       timeout: 15000,
-      maximumAge: 5 * 60 * 1000,
+      maximumAge: 0,
     });
   });
-  const { latitude, longitude } = pos.coords;
+  const { latitude, longitude, accuracy } = pos.coords;
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=12&addressdetails=1`,
     { headers: { "Accept": "application/json" } },
   );
   if (!res.ok) throw new Error("reverse-failed");
   const json = await res.json();
   const a = json.address ?? {};
-  const city: string = a.city || a.town || a.village || a.suburb || a.county || a.state_district || a.state || "";
+  const city: string = a.city || a.town || a.village || a.suburb || a.neighbourhood || a.county || a.state_district || a.state || "";
   if (!city) throw new Error("no-city");
-  return city;
+  return { city, accuracy };
 }
+
 
 function BrowseAll() {
   const { t, i18n } = useTranslation();
@@ -57,6 +58,7 @@ function BrowseAll() {
   const [q, setQ] = useState(initQ ?? "");
   const [near, setNear] = useState(false);
   const [detectedCity, setDetectedCity] = useState<string>("");
+  const [cityInput, setCityInput] = useState<string>("");
   const [detecting, setDetecting] = useState(false);
   const { user } = useAuth();
 
@@ -97,16 +99,22 @@ function BrowseAll() {
     if (near) { setNear(false); return; }
     setDetecting(true);
     try {
-      const city = await detectCityFromGeolocation();
+      const { city, accuracy } = await detectCityFromGeolocation();
       setDetectedCity(city);
+      setCityInput(city);
       setNear(true);
-      toast.success(t("nearby.detected", { city }));
+      if (accuracy > 20000) {
+        toast.warning(t("nearby.lowAccuracy", { city }));
+      } else {
+        toast.success(t("nearby.detected", { city }));
+      }
     } catch (err: unknown) {
       const code = (err as GeolocationPositionError | (Error & { code?: number }))?.code;
       if (code === 1) {
         toast.error(t("nearby.permissionDenied"));
       } else if (profileCity) {
         setDetectedCity("");
+        setCityInput(profileCity);
         setNear(true);
         toast.message(t("nearby.usingProfileCity", { city: profileCity }));
       } else {
@@ -116,6 +124,15 @@ function BrowseAll() {
       setDetecting(false);
     }
   };
+
+  const applyCityOverride = () => {
+    const c = cityInput.trim();
+    if (!c) return;
+    setDetectedCity(c);
+    setNear(true);
+    toast.success(t("nearby.updated", { city: c }));
+  };
+
 
   const autoRan = useRef(false);
   useEffect(() => {
@@ -157,6 +174,22 @@ function BrowseAll() {
           <span className="text-xs text-muted-foreground">{t("nearby.hint")}</span>
         )}
       </div>
+
+      {near && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 max-w-lg">
+          <label className="text-xs font-semibold text-muted-foreground">{t("nearby.cityLabel")}</label>
+          <Input
+            value={cityInput}
+            onChange={(e) => setCityInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCityOverride(); } }}
+            placeholder={t("nearby.cityPlaceholder")}
+            className="h-9 flex-1 min-w-[160px]"
+          />
+          <Button type="button" size="sm" variant="outline" onClick={applyCityOverride}>
+            {t("nearby.updateCity")}
+          </Button>
+        </div>
+      )}
 
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">

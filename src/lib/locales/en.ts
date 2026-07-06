@@ -152,6 +152,11 @@ export const en = {
     usingProfileCity: "Using city from your profile: {{city}}",
     signInFirst: "Sign in to find nearby workers.",
     emptyNear: "No workers found near {{city}} yet.",
+    lowAccuracy: "Detected {{city}} but the location is approximate. Please verify or edit the city below.",
+    updated: "Showing workers near {{city}}",
+    cityLabel: "City:",
+    cityPlaceholder: "Enter your city (e.g. Chennai)",
+    updateCity: "Update",
   },
   footer: {
     rights: "All rights reserved.",
