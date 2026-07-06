@@ -175,6 +175,22 @@ function BrowseAll() {
         )}
       </div>
 
+      {near && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 max-w-lg">
+          <label className="text-xs font-semibold text-muted-foreground">{t("nearby.cityLabel")}</label>
+          <Input
+            value={cityInput}
+            onChange={(e) => setCityInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCityOverride(); } }}
+            placeholder={t("nearby.cityPlaceholder")}
+            className="h-9 flex-1 min-w-[160px]"
+          />
+          <Button type="button" size="sm" variant="outline" onClick={applyCityOverride}>
+            {t("nearby.updateCity")}
+          </Button>
+        </div>
+      )}
+
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
         {categories.map((c) => (
