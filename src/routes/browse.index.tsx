@@ -57,6 +57,7 @@ function BrowseAll() {
   const [q, setQ] = useState(initQ ?? "");
   const [near, setNear] = useState(false);
   const [detectedCity, setDetectedCity] = useState<string>("");
+  const [cityInput, setCityInput] = useState<string>("");
   const [detecting, setDetecting] = useState(false);
   const { user } = useAuth();
 
