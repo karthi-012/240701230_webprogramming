@@ -143,7 +143,7 @@ export const en = {
   nearby: {
     fetchNearby: "Fetch nearby workers",
     detecting: "Detecting your location…",
-    detected: "Location detected: {{city}}",
+    detected: "Location detected. Showing nearby workers.",
     showingNear: "Showing near {{city}}",
     hint: "Filtered by your current location.",
     locationConsent: "We'll ask for your location to find workers near you.",
@@ -152,7 +152,7 @@ export const en = {
     usingProfileCity: "Using city from your profile: {{city}}",
     signInFirst: "Sign in to find nearby workers.",
     emptyNear: "No workers found near {{city}} yet.",
-    lowAccuracy: "Detected {{city}} but the location is approximate. Please verify or edit the city below.",
+    lowAccuracy: "Location detected, but it is approximate. Please verify or edit the city below.",
     updated: "Showing workers near {{city}}",
     cityLabel: "City:",
     cityPlaceholder: "Enter your city (e.g. Chennai)",
