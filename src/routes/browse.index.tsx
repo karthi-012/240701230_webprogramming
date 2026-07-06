@@ -26,7 +26,7 @@ export const Route = createFileRoute("/browse/")({
   component: BrowseAll,
 });
 
-async function detectCityFromGeolocation(): Promise<string> {
+async function detectCityFromGeolocation(): Promise<{ city: string; accuracy: number }> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     throw new Error("geo-unsupported");
   }
@@ -34,21 +34,22 @@ async function detectCityFromGeolocation(): Promise<string> {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
       timeout: 15000,
-      maximumAge: 5 * 60 * 1000,
+      maximumAge: 0,
     });
   });
-  const { latitude, longitude } = pos.coords;
+  const { latitude, longitude, accuracy } = pos.coords;
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=12&addressdetails=1`,
     { headers: { "Accept": "application/json" } },
   );
   if (!res.ok) throw new Error("reverse-failed");
   const json = await res.json();
   const a = json.address ?? {};
-  const city: string = a.city || a.town || a.village || a.suburb || a.county || a.state_district || a.state || "";
+  const city: string = a.city || a.town || a.village || a.suburb || a.neighbourhood || a.county || a.state_district || a.state || "";
   if (!city) throw new Error("no-city");
-  return city;
+  return { city, accuracy };
 }
+
 
 function BrowseAll() {
   const { t, i18n } = useTranslation();
