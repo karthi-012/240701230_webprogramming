@@ -99,16 +99,22 @@ function BrowseAll() {
     if (near) { setNear(false); return; }
     setDetecting(true);
     try {
-      const city = await detectCityFromGeolocation();
+      const { city, accuracy } = await detectCityFromGeolocation();
       setDetectedCity(city);
+      setCityInput(city);
       setNear(true);
-      toast.success(t("nearby.detected", { city }));
+      if (accuracy > 20000) {
+        toast.warning(t("nearby.lowAccuracy", { city }));
+      } else {
+        toast.success(t("nearby.detected", { city }));
+      }
     } catch (err: unknown) {
       const code = (err as GeolocationPositionError | (Error & { code?: number }))?.code;
       if (code === 1) {
         toast.error(t("nearby.permissionDenied"));
       } else if (profileCity) {
         setDetectedCity("");
+        setCityInput(profileCity);
         setNear(true);
         toast.message(t("nearby.usingProfileCity", { city: profileCity }));
       } else {
@@ -118,6 +124,15 @@ function BrowseAll() {
       setDetecting(false);
     }
   };
+
+  const applyCityOverride = () => {
+    const c = cityInput.trim();
+    if (!c) return;
+    setDetectedCity(c);
+    setNear(true);
+    toast.success(t("nearby.updated", { city: c }));
+  };
+
 
   const autoRan = useRef(false);
   useEffect(() => {
