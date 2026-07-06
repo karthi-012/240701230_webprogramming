@@ -26,6 +26,14 @@ export const Route = createFileRoute("/browse/")({
   component: BrowseAll,
 });
 
+function cleanNearbyLocationName(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  if (/\b(taluka|tehsil|district|county)\b/i.test(cleaned)) return "";
+  return cleaned;
+}
+
 async function detectCityFromGeolocation(): Promise<{ city: string; accuracy: number }> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     throw new Error("geo-unsupported");
@@ -39,13 +47,23 @@ async function detectCityFromGeolocation(): Promise<{ city: string; accuracy: nu
   });
   const { latitude, longitude, accuracy } = pos.coords;
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=12&addressdetails=1`,
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
     { headers: { "Accept": "application/json" } },
   );
   if (!res.ok) throw new Error("reverse-failed");
   const json = await res.json();
   const a = json.address ?? {};
-  const city: string = a.city || a.town || a.village || a.suburb || a.neighbourhood || a.county || a.state_district || a.state || "";
+  const city = [
+    a.neighbourhood,
+    a.suburb,
+    a.city_district,
+    a.city,
+    a.town,
+    a.village,
+    a.municipality,
+    a.state_district,
+    a.state,
+  ].map(cleanNearbyLocationName).find(Boolean) ?? "";
   if (!city) throw new Error("no-city");
   return { city, accuracy };
 }
@@ -104,9 +122,9 @@ function BrowseAll() {
       setCityInput(city);
       setNear(true);
       if (accuracy > 20000) {
-        toast.warning(t("nearby.lowAccuracy", { city }));
+        toast.warning(t("nearby.lowAccuracy"));
       } else {
-        toast.success(t("nearby.detected", { city }));
+        toast.success(t("nearby.detected"));
       }
     } catch (err: unknown) {
       const code = (err as GeolocationPositionError | (Error & { code?: number }))?.code;
