@@ -36,7 +36,11 @@ function cleanNearbyLocationName(value: unknown): string {
 
 function isBrowserFeatureBlocked(feature: "geolocation" | "microphone") {
   if (typeof document === "undefined") return false;
-  const policy = document.featurePolicy ?? document.permissionsPolicy;
+  const doc = document as Document & {
+    featurePolicy?: { allowsFeature?: (feature: string) => boolean };
+    permissionsPolicy?: { allowsFeature?: (feature: string) => boolean };
+  };
+  const policy = doc.featurePolicy ?? doc.permissionsPolicy;
   return typeof policy?.allowsFeature === "function" && !policy.allowsFeature(feature);
 }
 
