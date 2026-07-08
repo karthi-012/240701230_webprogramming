@@ -10,6 +10,16 @@ type Props = {
   className?: string;
 };
 
+function isMicrophoneBlockedByPage() {
+  if (typeof document === "undefined") return false;
+  const doc = document as Document & {
+    featurePolicy?: { allowsFeature?: (feature: string) => boolean };
+    permissionsPolicy?: { allowsFeature?: (feature: string) => boolean };
+  };
+  const policy = doc.featurePolicy ?? doc.permissionsPolicy;
+  return typeof policy?.allowsFeature === "function" && !policy.allowsFeature("microphone");
+}
+
 export function VoiceSearchButton({ onTranscript, className }: Props) {
   const transcribe = useServerFn(transcribeAudio);
   const [state, setState] = useState<"idle" | "recording" | "processing">("idle");
@@ -18,6 +28,10 @@ export function VoiceSearchButton({ onTranscript, className }: Props) {
 
   const start = async () => {
     try {
+      if (isMicrophoneBlockedByPage()) {
+        toast.error("Microphone is blocked in this preview. Open the app in a new tab or publish it, then try again.");
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = ["audio/webm", "audio/mp4"].find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
       const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
@@ -54,7 +68,7 @@ export function VoiceSearchButton({ onTranscript, className }: Props) {
       recorder.start();
       setState("recording");
     } catch {
-      toast.error("Microphone access denied.");
+      toast.error("Microphone access denied. Check the address-bar permission settings and try again.");
     }
   };
 

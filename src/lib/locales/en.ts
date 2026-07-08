@@ -147,6 +147,7 @@ export const en = {
     showingNear: "Showing near {{city}}",
     hint: "Filtered by your current location.",
     locationConsent: "We'll ask for your location to find workers near you.",
+    previewBlocked: "Location is blocked in this preview. Open the app in a new tab or publish it, then try again.",
     permissionDenied: "Location permission denied. Please allow location access and try again.",
     locationFailed: "Couldn't detect your location. Try again or set your city in your profile.",
     usingProfileCity: "Using city from your profile: {{city}}",

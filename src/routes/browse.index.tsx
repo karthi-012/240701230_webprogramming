@@ -34,7 +34,20 @@ function cleanNearbyLocationName(value: unknown): string {
   return cleaned;
 }
 
+function isBrowserFeatureBlocked(feature: "geolocation" | "microphone") {
+  if (typeof document === "undefined") return false;
+  const doc = document as Document & {
+    featurePolicy?: { allowsFeature?: (feature: string) => boolean };
+    permissionsPolicy?: { allowsFeature?: (feature: string) => boolean };
+  };
+  const policy = doc.featurePolicy ?? doc.permissionsPolicy;
+  return typeof policy?.allowsFeature === "function" && !policy.allowsFeature(feature);
+}
+
 async function detectCityFromGeolocation(): Promise<{ city: string; accuracy: number }> {
+  if (isBrowserFeatureBlocked("geolocation")) {
+    throw new Error("geo-policy-blocked");
+  }
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     throw new Error("geo-unsupported");
   }
@@ -128,7 +141,10 @@ function BrowseAll() {
       }
     } catch (err: unknown) {
       const code = (err as GeolocationPositionError | (Error & { code?: number }))?.code;
-      if (code === 1) {
+      const message = (err as Error)?.message;
+      if (message === "geo-policy-blocked") {
+        toast.error(t("nearby.previewBlocked"));
+      } else if (code === 1) {
         toast.error(t("nearby.permissionDenied"));
       } else if (profileCity) {
         setDetectedCity("");
