@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMode } from "@/hooks/use-mode";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "./LanguageToggle";
+import { NotificationsBell } from "./NotificationsBell";
 import { Sparkles, Menu, UserCircle, Briefcase, ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 
@@ -65,6 +66,7 @@ export function Header() {
             </button>
           )}
           <LanguageToggle />
+          {user && <NotificationsBell />}
           {user ? (
             <>
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
