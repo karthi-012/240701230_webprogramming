@@ -1,11 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useNearbyCity, sortByProximity } from "@/hooks/use-nearby-city";
 import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Card } from "@/components/ui/card";
+import { MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/browse/$category")({
   head: ({ params }) => ({ meta: [{ title: `${params.category} pros — SkillConnect` }] }),
@@ -19,6 +22,7 @@ function BrowseCategory() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
   const { user } = useAuth();
+  const { city, areas } = useNearbyCity();
 
   const { data: cat } = useQuery({
     queryKey: ["category", category],
@@ -35,7 +39,7 @@ function BrowseCategory() {
     queryFn: async () => {
       let query = supabase
         .from("providers")
-        .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
+        .select("id, headline, category_slug, city, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .eq("category_slug", category)
         .order("avg_rating", { ascending: false });
       if (user?.id) query = query.neq("id", user.id);
@@ -43,6 +47,8 @@ function BrowseCategory() {
       return data ?? [];
     },
   });
+
+  const sorted = useMemo(() => sortByProximity(providers, areas), [providers, areas]);
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -57,16 +63,23 @@ function BrowseCategory() {
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             {cat ? (lang === "ta" ? cat.name_ta : cat.name_en) : category}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">{providers.length} professionals</p>
+          <p className="text-sm text-muted-foreground mt-1">{sorted.length} professionals</p>
         </div>
       </div>
 
+      {city && (
+        <div className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1.5">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          {t("nearby.sortedBy", { city, defaultValue: `Sorted by distance from ${city}` })}
+        </div>
+      )}
+
       <div className="mt-8">
-        {providers.length === 0 ? (
+        {sorted.length === 0 ? (
           <Card className="p-10 text-center border-dashed text-muted-foreground">{t("browse.empty")}</Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {providers.map((p) => <ProviderCard key={p.id} p={p} />)}
+            {sorted.map((p) => <ProviderCard key={p.id} p={p} />)}
           </div>
         )}
       </div>
