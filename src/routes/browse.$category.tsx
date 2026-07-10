@@ -1,11 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useNearbyCity, sortByProximity } from "@/hooks/use-nearby-city";
 import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Card } from "@/components/ui/card";
+import { MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/browse/$category")({
   head: ({ params }) => ({ meta: [{ title: `${params.category} pros — SkillConnect` }] }),
@@ -19,6 +22,7 @@ function BrowseCategory() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
   const { user } = useAuth();
+  const { city, areas } = useNearbyCity();
 
   const { data: cat } = useQuery({
     queryKey: ["category", category],
@@ -35,7 +39,7 @@ function BrowseCategory() {
     queryFn: async () => {
       let query = supabase
         .from("providers")
-        .select("id, headline, category_slug, city, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
+        .select("id, headline, category_slug, city, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .eq("category_slug", category)
         .order("avg_rating", { ascending: false });
       if (user?.id) query = query.neq("id", user.id);
@@ -43,6 +47,8 @@ function BrowseCategory() {
       return data ?? [];
     },
   });
+
+  const sorted = useMemo(() => sortByProximity(providers, areas), [providers, areas]);
 
   return (
     <div className="container mx-auto px-4 py-10">
