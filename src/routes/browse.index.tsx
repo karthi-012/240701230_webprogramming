@@ -1,23 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useNearbyCity, sortByProximity, proximityScore } from "@/hooks/use-nearby-city";
 import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { VoiceSearchButton } from "@/components/site/VoiceSearchButton";
-import { Search, MapPin, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-
+import { Search, MapPin } from "lucide-react";
 
 const searchSchema = z.object({
   q: z.string().optional(),
-  near: z.union([z.literal("1"), z.literal("0")]).optional(),
 }).catch({});
 
 export const Route = createFileRoute("/browse/")({
@@ -26,80 +23,13 @@ export const Route = createFileRoute("/browse/")({
   component: BrowseAll,
 });
 
-function cleanNearbyLocationName(value: unknown): string {
-  if (typeof value !== "string") return "";
-  const cleaned = value.replace(/\s+/g, " ").trim();
-  if (!cleaned) return "";
-  if (/\b(taluka|tehsil|district|county)\b/i.test(cleaned)) return "";
-  return cleaned;
-}
-
-function isBrowserFeatureBlocked(feature: "geolocation" | "microphone") {
-  if (typeof document === "undefined") return false;
-  const doc = document as Document & {
-    featurePolicy?: { allowsFeature?: (feature: string) => boolean };
-    permissionsPolicy?: { allowsFeature?: (feature: string) => boolean };
-  };
-  const policy = doc.featurePolicy ?? doc.permissionsPolicy;
-  return typeof policy?.allowsFeature === "function" && !policy.allowsFeature(feature);
-}
-
-async function detectCityFromGeolocation(): Promise<{ city: string; accuracy: number }> {
-  if (isBrowserFeatureBlocked("geolocation")) {
-    throw new Error("geo-policy-blocked");
-  }
-  if (typeof navigator === "undefined" || !navigator.geolocation) {
-    throw new Error("geo-unsupported");
-  }
-  const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0,
-    });
-  });
-  const { latitude, longitude, accuracy } = pos.coords;
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-    { headers: { "Accept": "application/json" } },
-  );
-  if (!res.ok) throw new Error("reverse-failed");
-  const json = await res.json();
-  const a = json.address ?? {};
-  const city = [
-    a.neighbourhood,
-    a.suburb,
-    a.city_district,
-    a.city,
-    a.town,
-    a.village,
-    a.municipality,
-    a.state_district,
-    a.state,
-  ].map(cleanNearbyLocationName).find(Boolean) ?? "";
-  if (!city) throw new Error("no-city");
-  return { city, accuracy };
-}
-
-
 function BrowseAll() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
-  const { q: initQ, near: initNear } = Route.useSearch();
+  const { q: initQ } = Route.useSearch();
   const [q, setQ] = useState(initQ ?? "");
-  const [near, setNear] = useState(false);
-  const [detectedCity, setDetectedCity] = useState<string>("");
-  const [cityInput, setCityInput] = useState<string>("");
-  const [detecting, setDetecting] = useState(false);
   const { user } = useAuth();
-
-  const { data: myProfile } = useQuery({
-    enabled: !!user,
-    queryKey: ["profile-city", user?.id],
-    queryFn: async () => (await supabase.from("profiles").select("city").eq("id", user!.id).maybeSingle()).data,
-  });
-  const profileCity = (myProfile?.city ?? "").trim();
-  const activeCity = detectedCity || profileCity;
+  const { city, areas } = useNearbyCity();
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -107,18 +37,15 @@ function BrowseAll() {
   });
 
   const { data: providers = [] } = useQuery({
-    queryKey: ["providers", q, near, activeCity, user?.id ?? null],
+    queryKey: ["providers", q, user?.id ?? null],
     queryFn: async () => {
       let query = supabase
         .from("providers")
         .select("id, headline, category_slug, city, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .order("avg_rating", { ascending: false })
-        .limit(60);
+        .limit(200);
       if (q.trim()) {
         query = query.or(`headline.ilike.%${q}%,city.ilike.%${q}%,category_slug.ilike.%${q}%`);
-      }
-      if (near && activeCity) {
-        query = query.or(`city.ilike.%${activeCity}%,service_areas.cs.{${activeCity}}`);
       }
       if (user?.id) query = query.neq("id", user.id);
       const { data } = await query;
@@ -126,57 +53,11 @@ function BrowseAll() {
     },
   });
 
-  const handleNearClick = async () => {
-    if (near) { setNear(false); return; }
-    setDetecting(true);
-    try {
-      const { city, accuracy } = await detectCityFromGeolocation();
-      setDetectedCity(city);
-      setCityInput(city);
-      setNear(true);
-      if (accuracy > 20000) {
-        toast.warning(t("nearby.lowAccuracy"));
-      } else {
-        toast.success(t("nearby.detected"));
-      }
-    } catch (err: unknown) {
-      const code = (err as GeolocationPositionError | (Error & { code?: number }))?.code;
-      const message = (err as Error)?.message;
-      if (message === "geo-policy-blocked") {
-        toast.error(t("nearby.previewBlocked"));
-      } else if (code === 1) {
-        toast.error(t("nearby.permissionDenied"));
-      } else if (profileCity) {
-        setDetectedCity("");
-        setCityInput(profileCity);
-        setNear(true);
-        toast.message(t("nearby.usingProfileCity", { city: profileCity }));
-      } else {
-        toast.error(t("nearby.locationFailed"));
-      }
-    } finally {
-      setDetecting(false);
-    }
-  };
-
-  const applyCityOverride = () => {
-    const c = cityInput.trim();
-    if (!c) return;
-    setDetectedCity(c);
-    setNear(true);
-    toast.success(t("nearby.updated", { city: c }));
-  };
-
-
-  const autoRan = useRef(false);
-  useEffect(() => {
-    if (autoRan.current) return;
-    if (initNear === "1" && !detectedCity && !detecting) {
-      autoRan.current = true;
-      void handleNearClick();
-    }
-     
-  }, [initNear]);
+  const sorted = useMemo(() => sortByProximity(providers, areas), [providers, areas]);
+  const nearbyCount = useMemo(
+    () => (areas.length ? sorted.filter((p) => proximityScore(p, areas) < 99).length : 0),
+    [sorted, areas],
+  );
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -189,42 +70,12 @@ function BrowseAll() {
         <VoiceSearchButton className="h-12 w-12 rounded-xl shrink-0" onTranscript={(text) => setQ(text)} />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant={near ? "default" : "outline"}
-          onClick={handleNearClick}
-          disabled={detecting}
-          className={near ? "bg-gradient-hero text-primary-foreground" : ""}
-        >
-          {detecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-          {detecting
-            ? t("nearby.detecting")
-            : near
-              ? t("nearby.showingNear", { city: activeCity || "…" })
-              : t("nearby.fetchNearby")}
-        </Button>
-        {near && (
-          <span className="text-xs text-muted-foreground">{t("nearby.hint")}</span>
-        )}
-      </div>
-
-      {near && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 max-w-lg">
-          <label className="text-xs font-semibold text-muted-foreground">{t("nearby.cityLabel")}</label>
-          <Input
-            value={cityInput}
-            onChange={(e) => setCityInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCityOverride(); } }}
-            placeholder={t("nearby.cityPlaceholder")}
-            className="h-9 flex-1 min-w-[160px]"
-          />
-          <Button type="button" size="sm" variant="outline" onClick={applyCityOverride}>
-            {t("nearby.updateCity")}
-          </Button>
+      {city && (
+        <div className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1.5">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          {t("nearby.sortedBy", { city, count: nearbyCount, defaultValue: `Sorted by distance from ${city} · ${nearbyCount} nearby` })}
         </div>
       )}
-
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
         {categories.map((c) => (
@@ -237,13 +88,11 @@ function BrowseAll() {
       </div>
 
       <div className="mt-8">
-        {providers.length === 0 ? (
-          <Card className="p-10 text-center border-dashed text-muted-foreground">
-            {near && activeCity ? t("nearby.emptyNear", { city: activeCity }) : t("browse.empty")}
-          </Card>
+        {sorted.length === 0 ? (
+          <Card className="p-10 text-center border-dashed text-muted-foreground">{t("browse.empty")}</Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {providers.map((p) => <ProviderCard key={p.id} p={p} />)}
+            {sorted.map((p) => <ProviderCard key={p.id} p={p} />)}
           </div>
         )}
       </div>
