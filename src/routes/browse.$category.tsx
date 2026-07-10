@@ -63,16 +63,23 @@ function BrowseCategory() {
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             {cat ? (lang === "ta" ? cat.name_ta : cat.name_en) : category}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">{providers.length} professionals</p>
+          <p className="text-sm text-muted-foreground mt-1">{sorted.length} professionals</p>
         </div>
       </div>
 
+      {city && (
+        <div className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1.5">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          {t("nearby.sortedBy", { city, defaultValue: `Sorted by distance from ${city}` })}
+        </div>
+      )}
+
       <div className="mt-8">
-        {providers.length === 0 ? (
+        {sorted.length === 0 ? (
           <Card className="p-10 text-center border-dashed text-muted-foreground">{t("browse.empty")}</Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {providers.map((p) => <ProviderCard key={p.id} p={p} />)}
+            {sorted.map((p) => <ProviderCard key={p.id} p={p} />)}
           </div>
         )}
       </div>
