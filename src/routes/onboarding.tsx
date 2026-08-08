@@ -27,9 +27,11 @@ const providerSchema = z.object({
   bio: z.string().trim().max(2000).optional(),
   experience_years: z.coerce.number().int().min(0).max(80),
   city: z.string().trim().min(1).max(80),
+  pincode: z.string().trim().regex(/^\d{6}$/, "Enter a valid 6-digit pincode"),
   phone: z.string().trim().min(7).max(20),
   service_areas: z.string().trim().max(300).optional(),
 });
+
 
 function Onboarding() {
   const { t } = useTranslation();
