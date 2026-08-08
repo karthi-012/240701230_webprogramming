@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import { Briefcase, UserCircle } from "lucide-react";
+import { Briefcase, UserCircle, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [{ title: "Get started — SkillConnect" }] }),
