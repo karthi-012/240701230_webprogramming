@@ -29,7 +29,8 @@ function BrowseAll() {
   const { q: initQ } = Route.useSearch();
   const [q, setQ] = useState(initQ ?? "");
   const { user } = useAuth();
-  const { city, areas } = useNearbyCity();
+  const { city, areas, pincode, lat, lng } = useNearbyCity();
+  const origin = useMemo(() => ({ areas, pincode, lat, lng }), [areas, pincode, lat, lng]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -41,11 +42,11 @@ function BrowseAll() {
     queryFn: async () => {
       let query = supabase
         .from("providers")
-        .select("id, headline, category_slug, city, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
+        .select("id, headline, category_slug, city, pincode, latitude, longitude, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .order("avg_rating", { ascending: false })
         .limit(200);
       if (q.trim()) {
-        query = query.or(`headline.ilike.%${q}%,city.ilike.%${q}%,category_slug.ilike.%${q}%`);
+        query = query.or(`headline.ilike.%${q}%,city.ilike.%${q}%,category_slug.ilike.%${q}%,pincode.ilike.%${q}%`);
       }
       if (user?.id) query = query.neq("id", user.id);
       const { data } = await query;
@@ -53,11 +54,12 @@ function BrowseAll() {
     },
   });
 
-  const sorted = useMemo(() => sortByProximity(providers, areas), [providers, areas]);
+  const sorted = useMemo(() => sortByProximity(providers, origin), [providers, origin]);
   const nearbyCount = useMemo(
-    () => (areas.length ? sorted.filter((p) => proximityScore(p, areas) < 99).length : 0),
-    [sorted, areas],
+    () => (areas.length || lat != null ? sorted.filter((p) => isNearby(p, origin)).length : 0),
+    [sorted, origin, areas.length, lat],
   );
+
 
   return (
     <div className="container mx-auto px-4 py-10">
