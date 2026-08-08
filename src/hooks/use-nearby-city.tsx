@@ -161,3 +161,11 @@ export function sortByProximity<T extends ProviderLike & { avg_rating?: number |
   });
 }
 
+
+/** True when the provider is a pincode match, within maxKm, or matches a known area name. */
+export function isNearby(p: ProviderLike, origin: Origin, maxKm = 25): boolean {
+  const [tier, value] = rank(p, origin);
+  if (tier === 0) return true;
+  if (tier === 1) return value <= maxKm;
+  return value < 99;
+}
