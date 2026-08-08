@@ -22,7 +22,8 @@ function BrowseCategory() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
   const { user } = useAuth();
-  const { city, areas } = useNearbyCity();
+  const { city, areas, pincode, lat, lng } = useNearbyCity();
+  const origin = useMemo(() => ({ areas, pincode, lat, lng }), [areas, pincode, lat, lng]);
 
   const { data: cat } = useQuery({
     queryKey: ["category", category],
@@ -39,7 +40,7 @@ function BrowseCategory() {
     queryFn: async () => {
       let query = supabase
         .from("providers")
-        .select("id, headline, category_slug, city, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
+        .select("id, headline, category_slug, city, pincode, latitude, longitude, service_areas, avg_rating, total_reviews, experience_years, verified, profiles!providers_profile_fkey(full_name, avatar_url)")
         .eq("category_slug", category)
         .order("avg_rating", { ascending: false });
       if (user?.id) query = query.neq("id", user.id);
@@ -48,7 +49,8 @@ function BrowseCategory() {
     },
   });
 
-  const sorted = useMemo(() => sortByProximity(providers, areas), [providers, areas]);
+  const sorted = useMemo(() => sortByProximity(providers, origin), [providers, origin]);
+
 
   return (
     <div className="container mx-auto px-4 py-10">
