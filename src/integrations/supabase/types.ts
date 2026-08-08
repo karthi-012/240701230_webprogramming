@@ -244,7 +244,10 @@ export type Database = {
           hourly_rate: number | null
           id: string
           is_available: boolean
+          latitude: number | null
+          longitude: number | null
           phone: string | null
+          pincode: string | null
           service_areas: string[]
           total_jobs: number
           total_reviews: number
@@ -263,7 +266,10 @@ export type Database = {
           hourly_rate?: number | null
           id: string
           is_available?: boolean
+          latitude?: number | null
+          longitude?: number | null
           phone?: string | null
+          pincode?: string | null
           service_areas?: string[]
           total_jobs?: number
           total_reviews?: number
@@ -282,7 +288,10 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_available?: boolean
+          latitude?: number | null
+          longitude?: number | null
           phone?: string | null
+          pincode?: string | null
           service_areas?: string[]
           total_jobs?: number
           total_reviews?: number
