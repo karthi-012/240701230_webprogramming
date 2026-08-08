@@ -179,11 +179,31 @@ function Onboarding() {
               <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="mt-1.5 h-11" />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Pincode</Label>
+              <Input inputMode="numeric" maxLength={6} value={form.pincode}
+                onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                placeholder="600021" className="mt-1.5 h-11" />
+            </div>
+            <div>
+              <Label>Exact location</Label>
+              <Button type="button" variant="outline" onClick={useMyLocation} disabled={locating}
+                className="mt-1.5 h-11 w-full justify-start gap-2 font-medium">
+                <MapPin className="h-4 w-4 text-primary" />
+                {locating ? "Locating…" : coords ? "Location saved ✓" : "Use my current location"}
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-1">
+            Sharing your location lets customers nearby see you first, ranked by real distance in km.
+          </p>
           <div>
             <Label>Phone / WhatsApp</Label>
             <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="+91…" className="mt-1.5 h-11" />
           </div>
+
           <div>
             <Label>Service areas (comma separated)</Label>
             <Input value={form.service_areas} onChange={(e) => setForm({ ...form, service_areas: e.target.value })}
