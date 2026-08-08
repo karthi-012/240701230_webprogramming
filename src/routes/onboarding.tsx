@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { detectFromGeo } from "@/hooks/use-nearby-city";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import { Briefcase, UserCircle } from "lucide-react";
+import { Briefcase, UserCircle, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [{ title: "Get started — SkillConnect" }] }),
@@ -27,9 +29,11 @@ const providerSchema = z.object({
   bio: z.string().trim().max(2000).optional(),
   experience_years: z.coerce.number().int().min(0).max(80),
   city: z.string().trim().min(1).max(80),
+  pincode: z.string().trim().regex(/^\d{6}$/, "Enter a valid 6-digit pincode"),
   phone: z.string().trim().min(7).max(20),
   service_areas: z.string().trim().max(300).optional(),
 });
+
 
 function Onboarding() {
   const { t } = useTranslation();
@@ -48,9 +52,29 @@ function Onboarding() {
 
   const [form, setForm] = useState({
     category_slug: "", headline: "", bio: "", experience_years: "1",
-    city: "", phone: "", service_areas: "",
+    city: "", pincode: "", phone: "", service_areas: "",
   });
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const useMyLocation = async () => {
+    setLocating(true);
+    const geo = await detectFromGeo();
+    setLocating(false);
+    if (!geo) {
+      toast.error("Couldn't get your location. Allow location access, or type your city and pincode.");
+      return;
+    }
+    if (geo.lat != null && geo.lng != null) setCoords({ lat: geo.lat, lng: geo.lng });
+    setForm((f) => ({
+      ...f,
+      city: geo.city || f.city,
+      pincode: geo.pincode || f.pincode,
+      service_areas: f.service_areas || geo.areas.filter((a) => !/^\d+$/.test(a)).slice(0, 4).join(", "),
+    }));
+    toast.success("Location captured — customers nearby will see you first.");
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +93,9 @@ function Onboarding() {
       bio: parsed.data.bio,
       experience_years: parsed.data.experience_years,
       city: parsed.data.city,
+      pincode: parsed.data.pincode,
+      latitude: coords?.lat ?? null,
+      longitude: coords?.lng ?? null,
       phone: parsed.data.phone,
       whatsapp: parsed.data.phone,
       service_areas: areas,
@@ -82,6 +109,7 @@ function Onboarding() {
     toast.success("Profile created!");
     void navigate({ to: "/dashboard/provider" });
   };
+
 
   if (loading || !user) return <div className="container mx-auto py-20 text-center text-muted-foreground">Loading…</div>;
 
@@ -151,11 +179,31 @@ function Onboarding() {
               <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="mt-1.5 h-11" />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Pincode</Label>
+              <Input inputMode="numeric" maxLength={6} value={form.pincode}
+                onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                placeholder="600021" className="mt-1.5 h-11" />
+            </div>
+            <div>
+              <Label>Exact location</Label>
+              <Button type="button" variant="outline" onClick={useMyLocation} disabled={locating}
+                className="mt-1.5 h-11 w-full justify-start gap-2 font-medium">
+                <MapPin className="h-4 w-4 text-primary" />
+                {locating ? "Locating…" : coords ? "Location saved ✓" : "Use my current location"}
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-1">
+            Sharing your location lets customers nearby see you first, ranked by real distance in km.
+          </p>
           <div>
             <Label>Phone / WhatsApp</Label>
             <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="+91…" className="mt-1.5 h-11" />
           </div>
+
           <div>
             <Label>Service areas (comma separated)</Label>
             <Input value={form.service_areas} onChange={(e) => setForm({ ...form, service_areas: e.target.value })}
