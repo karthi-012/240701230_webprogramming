@@ -425,3 +425,24 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Connect Your Own Supabase Project
+
+1. Create a new Supabase project at https://app.supabase.com.
+2. Copy `.env.example` to `.env` in the repo root.
+3. Update `.env` with your own Supabase values:
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+4. In Supabase, enable Email/Password auth and/or Google auth if you want OAuth sign-in.
+5. Create the database schema using the SQL found in `supabase/migrations/20260621051245_f4fc170a-0739-4814-96c1-5c046ced7932.sql`.
+   - You can paste it into Supabase SQL editor, or use the Supabase CLI to apply it.
+6. Restart the app after updating `.env`.
+
+### Notes
+
+- The app reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` on both client and server.
+- `SUPABASE_SERVICE_ROLE_KEY` is required for server-side admin operations.
+- The current Google sign-in button uses Lovable OAuth. If you want Google OAuth against your own Supabase, you will need to replace that flow with `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/mode' } })`.
