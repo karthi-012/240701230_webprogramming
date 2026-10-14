@@ -142,6 +142,7 @@ export const en = {
   },
   nearby: {
     fetchNearby: "Fetch nearby workers",
+    showAll: "Show all workers",
     detecting: "Detecting your location…",
     detected: "Location detected. Showing nearby workers.",
     showingNear: "Showing near {{city}}",

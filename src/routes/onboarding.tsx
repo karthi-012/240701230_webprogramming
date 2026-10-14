@@ -36,7 +36,7 @@ const providerSchema = z.object({
 
 
 function Onboarding() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"choose" | "provider">("choose");
@@ -60,7 +60,8 @@ function Onboarding() {
 
   const useMyLocation = async () => {
     setLocating(true);
-    const geo = await detectFromGeo();
+    const language = i18n.language?.startsWith("ta") ? "ta" : "en";
+    const geo = await detectFromGeo(language);
     setLocating(false);
     if (!geo) {
       toast.error("Couldn't get your location. Allow location access, or type your city and pincode.");

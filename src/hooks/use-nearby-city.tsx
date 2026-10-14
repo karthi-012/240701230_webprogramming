@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -19,7 +20,7 @@ export type GeoResult = {
   lng: number | null;
 };
 
-export async function detectFromGeo(): Promise<GeoResult | null> {
+export async function detectFromGeo(language: "en" | "ta" = "en"): Promise<GeoResult | null> {
   if (typeof navigator === "undefined" || !navigator.geolocation) return null;
   try {
     const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -30,8 +31,16 @@ export async function detectFromGeo(): Promise<GeoResult | null> {
       });
     });
     const { latitude, longitude } = pos.coords;
+    const params = new URLSearchParams({
+      format: "jsonv2",
+      lat: String(latitude),
+      lon: String(longitude),
+      zoom: "18",
+      addressdetails: "1",
+      "accept-language": language,
+    });
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/reverse?${params}`,
       { headers: { Accept: "application/json" } },
     );
     if (!res.ok) return { city: "", areas: [], pincode: "", lat: latitude, lng: longitude };
@@ -49,9 +58,10 @@ export async function detectFromGeo(): Promise<GeoResult | null> {
   }
 }
 
-const CACHE_KEY = "sc:nearby-city:v2";
-
 export function useNearbyCity() {
+  const { i18n } = useTranslation();
+  const language = i18n.language?.startsWith("ta") ? "ta" : "en";
+  const cacheKey = `sc:nearby-city:v3:${language}`;
   const { user } = useAuth();
   const { data: profile } = useQuery({
     enabled: !!user,
@@ -60,29 +70,31 @@ export function useNearbyCity() {
   });
   const profileCity = (profile?.city ?? "").trim();
 
-  const [geo, setGeo] = useState<GeoResult | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = window.localStorage.getItem(CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (parsed && Date.now() - parsed.at < 30 * 60 * 1000) return parsed.value;
-    } catch { /* ignore */ }
-    return null;
-  });
+  const [geo, setGeo] = useState<GeoResult | null>(null);
 
   useEffect(() => {
-    if (geo) return;
     let cancelled = false;
-    void detectFromGeo().then((v) => {
+    try {
+      const raw = window.localStorage.getItem(cacheKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Date.now() - parsed.at < 30 * 60 * 1000) {
+          setGeo(parsed.value);
+          return () => { cancelled = true; };
+        }
+      }
+    } catch { /* ignore unavailable or invalid cache */ }
+
+    setGeo(null);
+    void detectFromGeo(language).then((v) => {
       if (cancelled || !v) return;
       setGeo(v);
       try {
-        window.localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), value: v }));
-      } catch { /* ignore */ }
+        window.localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), value: v }));
+      } catch { /* ignore unavailable storage */ }
     });
     return () => { cancelled = true; };
-  }, [geo]);
+  }, [cacheKey, language]);
 
   const city = geo?.city || profileCity;
   const areas = geo?.areas ?? (profileCity ? [profileCity] : []);

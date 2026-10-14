@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ProviderCard } from "@/routes/index";
 import { Briefcase, Heart, Calendar, Star, Search, MapPin } from "lucide-react";
+import { formatTimeWithPeriod } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [{ title: "Dashboard — SkillConnect" }] }),
@@ -149,7 +150,10 @@ function Dashboard() {
               <Card key={b.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="font-semibold">{name}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{b.providers?.category_slug?.replace("-", " ")} • {b.service_date}</div>
+                  <div className="text-xs text-muted-foreground capitalize">
+                    {b.providers?.category_slug?.replace("-", " ")} • {b.service_date}
+                    {b.service_time ? ` • ${formatTimeWithPeriod(b.service_time)}` : ""}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold capitalize">{b.status}</span>

@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Star, Phone, MessageCircle, ShieldCheck, MapPin, Calendar, Briefcase, Heart } from "lucide-react";
@@ -325,7 +328,9 @@ function BookingDialog({
   providerName: string;
 }) {
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("");
+  const [period, setPeriod] = useState("AM");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const today = new Date().toISOString().slice(0, 10);
@@ -342,7 +347,33 @@ function BookingDialog({
           onSubmit={(e) => {
             e.preventDefault();
             if (!date) return;
-            onSubmit({ date, time, address, notes });
+            if (hour || minute) {
+              const hourNumber = Number(hour);
+              const minuteNumber = Number(minute);
+              if (
+                !hour ||
+                !minute ||
+                !Number.isInteger(hourNumber) ||
+                hourNumber < 1 ||
+                hourNumber > 12 ||
+                !Number.isInteger(minuteNumber) ||
+                minuteNumber < 0 ||
+                minuteNumber > 59
+              ) {
+                toast.error("Enter a valid hour and minute for the booking time.");
+                return;
+              }
+
+              const hour24 = (hourNumber % 12) + (period === "PM" ? 12 : 0);
+              onSubmit({
+                date,
+                time: `${String(hour24).padStart(2, "0")}:${String(minuteNumber).padStart(2, "0")}`,
+                address,
+                notes,
+              });
+              return;
+            }
+            onSubmit({ date, time: "", address, notes });
           }}
         >
           <div className="grid grid-cols-2 gap-3">
@@ -351,8 +382,45 @@ function BookingDialog({
               <Input id="bk-date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="bk-time">Time</Label>
-              <Input id="bk-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+              <Label htmlFor="bk-time-hour">Time (optional)</Label>
+              <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr_1.2fr] items-center gap-1.5">
+                <Input
+                  id="bk-time-hour"
+                  type="number"
+                  min={1}
+                  max={12}
+                  step={1}
+                  inputMode="numeric"
+                  placeholder="HH"
+                  aria-label="Hour"
+                  className="px-2 text-center"
+                  value={hour}
+                  onChange={(e) => setHour(e.target.value)}
+                />
+                <span aria-hidden="true">:</span>
+                <Input
+                  id="bk-time-minute"
+                  type="number"
+                  min={0}
+                  max={59}
+                  step={1}
+                  inputMode="numeric"
+                  placeholder="MM"
+                  aria-label="Minute"
+                  className="px-2 text-center"
+                  value={minute}
+                  onChange={(e) => setMinute(e.target.value)}
+                />
+                <Select value={period} onValueChange={setPeriod}>
+                  <SelectTrigger aria-label="AM or PM" className="px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="PM">PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <div>

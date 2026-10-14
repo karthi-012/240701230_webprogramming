@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
@@ -10,11 +10,13 @@ import { CategoryIcon } from "@/components/site/CategoryIcon";
 import { ProviderCard } from "@/routes/index";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { VoiceSearchButton } from "@/components/site/VoiceSearchButton";
 import { Search, MapPin } from "lucide-react";
 
 const searchSchema = z.object({
   q: z.string().optional(),
+  near: z.enum(["1"]).optional(),
 }).catch({});
 
 export const Route = createFileRoute("/browse/")({
@@ -25,8 +27,9 @@ export const Route = createFileRoute("/browse/")({
 
 function BrowseAll() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const lang = i18n.language?.startsWith("ta") ? "ta" : "en";
-  const { q: initQ } = Route.useSearch();
+  const { q: initQ, near } = Route.useSearch();
   const [q, setQ] = useState(initQ ?? "");
   const { user } = useAuth();
   const { city, areas, pincode, lat, lng } = useNearbyCity();
@@ -54,10 +57,13 @@ function BrowseAll() {
     },
   });
 
-  const sorted = useMemo(() => sortByProximity(providers, origin), [providers, origin]);
+  const results = useMemo(() => {
+    if (near !== "1") return providers;
+    return sortByProximity(providers, origin).filter((p) => isNearby(p, origin));
+  }, [providers, origin, near]);
   const nearbyCount = useMemo(
-    () => (areas.length || lat != null ? sorted.filter((p) => isNearby(p, origin)).length : 0),
-    [sorted, origin, areas.length, lat],
+    () => (areas.length || lat != null ? providers.filter((p) => isNearby(p, origin)).length : 0),
+    [providers, origin, areas.length, lat],
   );
 
 
@@ -72,7 +78,30 @@ function BrowseAll() {
         <VoiceSearchButton className="h-12 w-12 rounded-xl shrink-0" onTranscript={(text) => setQ(text)} />
       </div>
 
-      {city && (
+      <div className="mt-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 rounded-xl border-primary/40 text-primary hover:bg-primary/5"
+          onClick={() => {
+            void navigate({
+              to: "/browse",
+              search: {
+                q: q.trim() || undefined,
+                near: near === "1" ? undefined : "1",
+              },
+            });
+          }}
+        >
+          <MapPin className="h-4 w-4" />
+          {near === "1" ? t("nearby.showAll") : t("nearby.fetchNearby")}
+        </Button>
+        {near !== "1" && (
+          <p className="mt-2 text-xs text-muted-foreground">{t("nearby.locationConsent")}</p>
+        )}
+      </div>
+
+      {near === "1" && city && (
         <div className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1.5">
           <MapPin className="h-3.5 w-3.5 text-primary" />
           {t("nearby.sortedBy", { city, count: nearbyCount, defaultValue: `Sorted by distance from ${city} · ${nearbyCount} nearby` })}
@@ -90,11 +119,13 @@ function BrowseAll() {
       </div>
 
       <div className="mt-8">
-        {sorted.length === 0 ? (
-          <Card className="p-10 text-center border-dashed text-muted-foreground">{t("browse.empty")}</Card>
+        {results.length === 0 ? (
+          <Card className="p-10 text-center border-dashed text-muted-foreground">
+            {near === "1" && city ? t("nearby.emptyNear", { city }) : t("browse.empty")}
+          </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sorted.map((p) => <ProviderCard key={p.id} p={p} />)}
+            {results.map((p) => <ProviderCard key={p.id} p={p} />)}
           </div>
         )}
       </div>
