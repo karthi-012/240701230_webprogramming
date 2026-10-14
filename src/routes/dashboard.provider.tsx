@@ -8,7 +8,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Star, CheckCircle2, Clock, Briefcase, Upload, ImagePlus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Star, CheckCircle2, Clock, Briefcase, Upload, ImagePlus, Trash2 } from "lucide-react";
 import { formatTimeWithPeriod } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/provider")({
@@ -21,6 +31,8 @@ function ProviderDashboard() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [uploading, setUploading] = useState(false);
+  const [portfolioImageToDelete, setPortfolioImageToDelete] = useState<{ id: string; image_url: string } | null>(null);
+  const [deletingPortfolioImage, setDeletingPortfolioImage] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) void navigate({ to: "/auth" });
@@ -78,6 +90,7 @@ function ProviderDashboard() {
       await supabase.from("portfolio_images").insert({ provider_id: user.id, image_url: signed.signedUrl });
       toast.success("Photo added");
       void qc.invalidateQueries({ queryKey: ["my-portfolio"] });
+      void qc.invalidateQueries({ queryKey: ["portfolio", user.id] });
     }
     setUploading(false);
   };
@@ -86,6 +99,38 @@ function ProviderDashboard() {
     const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Updated"); void qc.invalidateQueries({ queryKey: ["incoming-bookings"] }); }
+  };
+
+  const deletePortfolioImage = async () => {
+    if (!portfolioImageToDelete) return;
+
+    setDeletingPortfolioImage(true);
+    const { error } = await supabase
+      .from("portfolio_images")
+      .delete()
+      .eq("id", portfolioImageToDelete.id)
+      .eq("provider_id", user.id);
+    if (error) {
+      toast.error(error.message);
+      setDeletingPortfolioImage(false);
+      return;
+    }
+
+    const storagePath = portfolioImageToDelete.image_url.match(/\/storage\/v1\/object\/sign\/portfolios\/([^?]+)/)?.[1];
+    if (storagePath) {
+      const { error: storageError } = await supabase.storage
+        .from("portfolios")
+        .remove([decodeURIComponent(storagePath)]);
+      if (storageError) toast.error(`Post deleted, but image cleanup failed: ${storageError.message}`);
+      else toast.success("Post deleted");
+    } else {
+      toast.success("Post deleted");
+    }
+
+    setPortfolioImageToDelete(null);
+    setDeletingPortfolioImage(false);
+    void qc.invalidateQueries({ queryKey: ["my-portfolio"] });
+    void qc.invalidateQueries({ queryKey: ["portfolio", user.id] });
   };
 
   const active = requests.filter((r) => r.status === "pending" || r.status === "accepted").length;
@@ -128,12 +173,51 @@ function ProviderDashboard() {
               Upload work photos so customers can see your craft.
             </Card>
           ) : portfolio.map((img) => (
-            <div key={img.id} className="aspect-square rounded-2xl overflow-hidden border border-border/60">
+            <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden border border-border/60">
               <img src={img.image_url} alt={img.caption ?? ""} className="h-full w-full object-cover" />
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                className="absolute right-2 top-2"
+                aria-label="Delete portfolio post"
+                onClick={() => setPortfolioImageToDelete({ id: img.id, image_url: img.image_url })}
+              >
+                <Trash2 />
+              </Button>
             </div>
           ))}
         </div>
       </section>
+
+      <AlertDialog
+        open={portfolioImageToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletingPortfolioImage) setPortfolioImageToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the post from your portfolio and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingPortfolioImage}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingPortfolioImage}
+              onClick={(event) => {
+                event.preventDefault();
+                void deletePortfolioImage();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingPortfolioImage ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <section className="mt-10">
         <h2 className="text-xl font-bold">Booking requests</h2>
